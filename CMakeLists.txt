@@ -56,6 +56,7 @@ MESSAGE(${CUDA_NVCC_FLAGS})
 file(GLOB Fission-DNN_CU_SOURCES  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
     "common/*"
     "main.cpp"
+    "config/*"
     )
     #  EXCLUDE_FROM_ALL "build/*")
 
