@@ -7,6 +7,7 @@
 #include<iostream>
 #include<glog/logging.h>
 #include"common/nDMatrix.hpp"
+#include"config/configBase.hpp"
 
 int main(int argc, char** argv)
 {
@@ -91,6 +92,17 @@ int main(int argc, char** argv)
         }
     }
 
+    ConfigTable::getInstance()->initConfig("profile/mnsit/MnistConfig.txt");
+    int layerSize = ConfigTable::getInstance()->getLayersNum();
+    cout<<"layersize: "<< layerSize<<endl;
+    BaseLayerConfig* firstLayer = ConfigTable::getInstance()->getFirstLayer();
+    for(int i = 0; i < layerSize; i++)
+    {
+        cout<<firstLayer->getName()<<" ";
+        if(firstLayer->getVecNext().size() > 0)
+            firstLayer = ((firstLayer->getVecNext())[0]);
+    }
+    cout << endl;
     LOG(INFO)<< "Hello world";
     return 0;
 }
