@@ -255,7 +255,8 @@ void ConfigTable::showLayersConfig()
             ++head;
     }
 
-    cout << endl << endl << "...Read The Layers Configure :" << endl;
+    cout << endl << endl ;
+    LOG(INFO) << "Read The Layers Configure :";
     for(int i = 0; i < vStrLayers.size(); i++)
     {
         string type = getStringVariable(vStrLayers[i], "LAYER");
@@ -281,20 +282,20 @@ void ConfigTable::showLayersConfig()
                                    stride_w, ka, init_w, lrate, weight_decay);
 
             cout << endl;
-            cout << "***********************Conv layer**********************"
-            << endl;
-            cout << "              NAME : " << name         << endl;
-            cout << "             INPUT : " << input        << endl;
-            cout << "         SUB_INPUT : " << sub_input    << endl;
-            cout << "       KERNEL_SIZE : " << ks           << endl;
-            cout << "     KERNEL_AMOUNT : " << ka           << endl;
-            cout << "             PAD_H : " << pad_h        << endl;
-            cout << "             PAD_W : " << pad_w        << endl;
-            cout << "          STRIDE_H : " << stride_h     << endl;
-            cout << "          STRIDE_W : " << stride_w     << endl;
-            cout << "            INIT_W : " << init_w       << endl;
-            cout << "        LEARN_RATE : " << lrate        << endl;
-            cout << "      WEIGHT_DECAY : " << weight_decay << endl;
+            LOG(INFO) << "***********************Conv layer**********************";
+            cout << endl;
+            LOG(INFO) << "              NAME : " << name;
+            LOG(INFO) << "             INPUT : " << input;
+            LOG(INFO) << "         SUB_INPUT : " << sub_input;
+            LOG(INFO) << "       KERNEL_SIZE : " << ks;
+            LOG(INFO) << "     KERNEL_AMOUNT : " << ka;
+            LOG(INFO) << "             PAD_H : " << pad_h;
+            LOG(INFO) << "             PAD_W : " << pad_w;
+            LOG(INFO) << "          STRIDE_H : " << stride_h;
+            LOG(INFO) << "          STRIDE_W : " << stride_w;
+            LOG(INFO) << "            INIT_W : " << init_w;
+            LOG(INFO) << "        LEARN_RATE : " << lrate;
+            LOG(INFO) << "      WEIGHT_DECAY : " << weight_decay;
 
         }else if(string("POOLING") == type)
         {
@@ -310,17 +311,17 @@ void ConfigTable::showLayersConfig()
                                       stride_w, m_poolConfig->getPoolType());
 
             cout << endl;
-            cout << "***********************Pooling layer*******************"
-            << endl;
-            cout << "              NAME : " << name        << endl;
-            cout << "             INPUT : " << input       << endl;
-            cout << "         SUB_INPUT : " << sub_input   << endl;
-            cout << "      POOLING_TYPE : " << poolType    << endl;
-            cout << "           POOLDIM : " << size        << endl;
-            cout << "             PAD_H : " << pad_h       << endl;
-            cout << "             PAD_W : " << pad_w       << endl;
-            cout << "          STRIDE_H : " << stride_h    << endl;
-            cout << "          STRIDE_W : " << stride_w    << endl;
+            LOG(INFO) << "***********************Pooling layer*******************";
+            cout << endl;
+            LOG(INFO) << "              NAME : " << name;
+            LOG(INFO) << "             INPUT : " << input;
+            LOG(INFO) << "         SUB_INPUT : " << sub_input;
+            LOG(INFO) << "      POOLING_TYPE : " << poolType;
+            LOG(INFO) << "           POOLDIM : " << size;
+            LOG(INFO) << "             PAD_H : " << pad_h;
+            LOG(INFO) << "             PAD_W : " << pad_w;
+            LOG(INFO) << "          STRIDE_H : " << stride_h;
+            LOG(INFO) << "          STRIDE_W : " << stride_w;
 
         }else if(string("HIDDEN") == type)
         {
@@ -332,14 +333,15 @@ void ConfigTable::showLayersConfig()
             layer = new HiddenLayerConfig(type, name, input, sub_input, NumHidden, init_w, lrate, weight_decay );
 
             cout << endl ;
-            cout <<"***********************Hidden layer********************"<< endl;
-            cout <<"              NAME : " << name          << endl;
-            cout <<"             INPUT : " << input         << endl;
-            cout <<"         SUB_INPUT : " << sub_input     << endl;
-            cout <<"       NUM_NEURONS : " << NumHidden     << endl;
-            cout <<"            INIT_W : " << init_w        << endl;
-            cout <<"        LEARN_RATE : " << lrate         << endl;
-            cout <<"      WEIGHT_DECAY : " << weight_decay  << endl;
+            LOG(INFO) <<"***********************Hidden layer********************";
+            cout << endl;
+            LOG(INFO) <<"              NAME : " << name;
+            LOG(INFO) <<"             INPUT : " << input;
+            LOG(INFO) <<"         SUB_INPUT : " << sub_input;
+            LOG(INFO) <<"       NUM_NEURONS : " << NumHidden;
+            LOG(INFO) <<"            INIT_W : " << init_w;
+            LOG(INFO) <<"        LEARN_RATE : " << lrate;
+            LOG(INFO) <<"      WEIGHT_DECAY : " << weight_decay;
 
         }else if(string("SOFTMAX") == type)
         {
@@ -347,21 +349,23 @@ void ConfigTable::showLayersConfig()
             float weight_decay = getFloatVariable(vStrLayers[i], "WEIGHT_DECAY");
             layer = new SoftMaxLayerConfig(type, name , input, sub_input, nclasses, weight_decay);
 
-            cout<< endl ;
-            cout<<"***********************SoftMax layer*******************"<< endl;
-            cout <<"              NAME : " << name         << endl;
-            cout <<"             INPUT : " << input        << endl;
-            cout <<"         SUB_INPUT : " << sub_input    << endl;
-            cout <<"       NUM_CLASSES : " << nclasses     << endl;
-            cout <<"      WEIGHT_DECAY : " << weight_decay << endl;
+            cout << endl ;
+            LOG(INFO)<<"***********************SoftMax layer*******************";
+            cout << endl;
+            LOG(INFO) <<"              NAME : " << name;
+            LOG(INFO) <<"             INPUT : " << input;
+            LOG(INFO) <<"         SUB_INPUT : " << sub_input;
+            LOG(INFO) <<"       NUM_CLASSES : " << nclasses;
+            LOG(INFO) <<"      WEIGHT_DECAY : " << weight_decay;
             cout << endl<<endl;
 
         }else if(string("DATA") == type)
         {
             layer = new DataLayerConfig(type ,name, input, sub_input);
-            cout << endl ;
-            cout <<"***********************Data layer**********************"<< endl;
-            cout <<"              NAME : " << name  <<endl;
+            LOG(INFO) << endl ;
+            LOG(INFO) <<"***********************Data layer**********************";
+            cout<< endl;
+            LOG(INFO) <<"              NAME : " << name;
 
         }else if(type == string("ACTIVATION"))
         {
@@ -370,11 +374,12 @@ void ConfigTable::showLayersConfig()
             layer = new ActivationLayerConfig(type, name, input, sub_input, m_nonLinearConfig->getNonLinearType());
 
             cout << endl;
-            cout <<"********************Activation layer*******************"<< endl;
-            cout <<"              NAME : " << name          << endl;
-            cout <<"             INPUT : " << input         << endl;
-            cout <<"        SUB_INPUT  : " << sub_input     << endl;
-            cout <<"     NON_LINEARITY : " << non_linearity << endl;
+            LOG(INFO) <<"********************Activation layer*******************";
+            cout << endl;
+            LOG(INFO) <<"              NAME : " << name;
+            LOG(INFO) <<"             INPUT : " << input;
+            LOG(INFO) <<"        SUB_INPUT  : " << sub_input;
+            LOG(INFO) <<"     NON_LINEARITY : " << non_linearity;
 
         }else if(string("LRN") == type)
         {
@@ -385,13 +390,14 @@ void ConfigTable::showLayersConfig()
             layer = new LRNLayerConfig(type, name, input, sub_input, lrnN, lrnAlpha, lrnBeta);
 
             cout << endl;
-            cout << "***********************LRN layer**********************"<< endl;
-            cout <<"               NAME : " << name         << endl;
-            cout <<"              INPUT : " << input        << endl;
-            cout <<"          SUB_INPUT : " << sub_input    << endl;
-            cout <<"               LRNN : " << lrnN         << endl;
-            cout <<"           LRNALPHA : " << lrnAlpha     << endl;
-            cout <<"            LRNBETA : " << lrnBeta      << endl;
+            LOG(INFO) << "***********************LRN layer**********************";
+            cout << endl;
+            LOG(INFO) <<"               NAME : " << name;
+            LOG(INFO) <<"              INPUT : " << input;
+            LOG(INFO) <<"          SUB_INPUT : " << sub_input;
+            LOG(INFO) <<"               LRNN : " << lrnN;
+            LOG(INFO) <<"           LRNALPHA : " << lrnAlpha;
+            LOG(INFO) <<"            LRNBETA : " << lrnBeta;
 
         }else if(string("INCEPTION") == type)
         {
@@ -408,46 +414,48 @@ void ConfigTable::showLayersConfig()
             layer = new InceptionLayerConfig(type, name, input, sub_input, one, three, five, three_reduce, five_reduce,
                                         pool_proj, init_w, lrate, weight_decay);
             cout << endl;
-            cout <<"********************Inception layer*******************"<< endl;
-            cout <<"              NAME : " << name         << endl;
-            cout <<"             INPUT : " << input        << endl;
-            cout <<"         SUB_INPUT : " << sub_input    << endl;
-            cout <<"              ONE  : " << one          << endl;
-            cout <<"             THREE : " << three        << endl;
-            cout <<"              FIVE : " << five         << endl;
-            cout <<"      THREE_REDUCE : " << three_reduce << endl;
-            cout <<"       FIVE_REDUCE : " << five_reduce  << endl;
-            cout <<"         POOL_PROJ : " << pool_proj    << endl;
-            cout <<"            INIT_W : " << init_w       << endl;
-            cout <<"        LEARN_RATE : " << lrate        << endl;
-            cout <<"      WEIGHT_DECAY : " << weight_decay << endl;
+            LOG(INFO) <<"********************Inception layer*******************";
+            cout << endl;
+            LOG(INFO) <<"              NAME : " << name;
+            LOG(INFO) <<"             INPUT : " << input;
+            LOG(INFO) <<"         SUB_INPUT : " << sub_input;
+            LOG(INFO) <<"              ONE  : " << one;
+            LOG(INFO) <<"             THREE : " << three;
+            LOG(INFO) <<"              FIVE : " << five;
+            LOG(INFO) <<"      THREE_REDUCE : " << three_reduce;
+            LOG(INFO) <<"       FIVE_REDUCE : " << five_reduce;
+            LOG(INFO) <<"         POOL_PROJ : " << pool_proj;
+            LOG(INFO) <<"            INIT_W : " << init_w;
+            LOG(INFO) <<"        LEARN_RATE : " << lrate;
+            LOG(INFO) <<"      WEIGHT_DECAY : " << weight_decay;
 
         }else if(string("DROPOUT") == type)
         {
             float rate = getFloatVariable(vStrLayers[i], "DROP_RATE");
             layer = new DropOutLayerConfig(type, name, input, sub_input, rate);
             cout << endl;
-            cout <<"*********************DropOut layer********************"<< endl;
-            cout <<"              NAME : " << name         << endl;
-            cout <<"             INPUT : " << input        << endl;
-            cout <<"         SUB_INPUT : " << sub_input    << endl;
-            cout <<"         DROP_RATE : " << rate         << endl;
+            LOG(INFO) <<"*********************DropOut layer********************";
+            LOG(INFO) <<"              NAME : " << name;
+            LOG(INFO) <<"             INPUT : " << input;
+            LOG(INFO) <<"         SUB_INPUT : " << sub_input;
+            LOG(INFO) <<"         DROP_RATE : " << rate;
 
         }else if(string("BRANCH") == type)
         {
             vector<string> outputs = getVectorVariable(vStrLayers[i], "OUTPUTS");
             layer = new BranchLayerConfig(type, name, input, sub_input, outputs);
             cout << endl;
-            cout <<"***********************Branch layer********************"<< endl;
-            cout <<"              NAME : " << name         << endl;
-            cout <<"             INPUT : " << input        << endl;
-            cout <<"         SUB_INPUT : " << sub_input    << endl;
-            cout <<"            OUTPUT : ";
+            LOG(INFO) <<"***********************Branch layer********************";
+            cout << endl;
+            LOG(INFO) <<"              NAME : " << name;
+            LOG(INFO) <<"             INPUT : " << input;
+            LOG(INFO) <<"         SUB_INPUT : " << sub_input;
+            LOG(INFO) <<"            OUTPUT : ";
             for(int n = 0; n < outputs.size(); n++)
             {
-                cout<< outputs[n]<<" ";
+                LOG(INFO)<< outputs[n]<<" ";
             }
-            cout<< endl;
+        cout<< endl;
         }
         
         layersInsertByName(name, layer);
