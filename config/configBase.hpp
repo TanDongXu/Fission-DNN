@@ -12,7 +12,7 @@
 #include<vector>
 #include<map>
 #include<glog/logging.h>
-#include"common/util.cuh"
+#include"common/util/util.cuh"
 
 using namespace std;
 
