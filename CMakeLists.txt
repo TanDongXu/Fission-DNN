@@ -90,6 +90,7 @@ file(GLOB Fission-DNN_CU_SOURCES  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "common/util/*"
     "examples/mnist/*"
     "build/datum.pb.*"
+    "layers/*"
     )
     #  EXCLUDE_FROM_ALL "build/*")
 

@@ -8,7 +8,6 @@
 #include<iostream>
 #include<string>
 #include<sys/stat.h>
-#include<unistd.h>
 #include"db_lmdb.hpp"
 
 using namespace std;
