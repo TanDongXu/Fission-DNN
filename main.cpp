@@ -8,6 +8,7 @@
 #include<glog/logging.h>
 #include"common/nDMatrix.hpp"
 #include"config/configBase.hpp"
+#include"examples/mnist/convert_mnist_data.hpp"
 
 int main(int argc, char** argv)
 {
@@ -103,6 +104,9 @@ int main(int argc, char** argv)
             firstLayer = ((firstLayer->getVecNext())[0]);
     }
     cout << endl;
+
+    cout<<"Third test....."<<endl;
+    createMnistLMDB();
     LOG(INFO)<< "Hello world";
     return 0;
 }
