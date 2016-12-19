@@ -16,17 +16,12 @@
 #include"common/util/db.hpp"
 #include"build/datum.pb.h"
 #include"common/util/format.hpp"
+#include"readData/mnist/data_reader.hpp"
 
 
 using namespace std;
 using namespace caffe;//protobuf create
 using boost::scoped_ptr;
-
-uint32_t swap_endian(uint32_t val)
-{
-    val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
-    return (val << 16) | (val >> 16);
-}
 
 void convert_dataSet(const char* image_filename, const char* label_filename,
                      const char* db_path, const string& db_backend)
