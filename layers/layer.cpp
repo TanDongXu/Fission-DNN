@@ -13,43 +13,12 @@
 using namespace std;
 
 template<typename Ntype>
-inline Ntype Layer<Ntype>::Forward(const NDMatrix<Ntype>* bottom, const NDMatrix<Ntype>* top)
+inline Ntype Layer<Ntype>::Forward()
 {
-    Ntype loss = 0;
-    Reshape(m_bottom);
-    const string mode = ConfigTable::getInstance()->getSolver_mode();
-    if(string("CPU") == mode)
-    {
-        Forward_cpu(bottom, top);
-        // compute loss
-
-
-
-
-    }else if(string("GPU") == mode)
-    {
-        Forward_gpu(bottom, top);
-        // compute loss
-
-        
-
-    }else
-        LOG(FATAL) << "Unknown Solver mode.";
-
-    return loss;
 }
 
 template<typename Ntype>
-inline void Layer<Ntype>::Backward(const NDMatrix<Ntype>* top, const NDMatrix<Ntype>* bottom)
+inline void Layer<Ntype>::Backward()
 {
-    const string mode = ConfigTable::getInstance()->getSolver_mode();
-    if(string("CPU") == mode)
-    {
-        Backward_cpu(top, bottom);
-    }else if(string("GPU") == mode)
-    {
-        Backward_gpu(top, bottom);
-    }else
-        LOG(FATAL) << "Unknown Solver mode.";
 }
 

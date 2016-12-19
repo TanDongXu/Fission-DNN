@@ -23,31 +23,16 @@ class Layer
 {
     public:
     virtual ~Layer(){}
-    void setUp(const NDMatrix<Ntype>* bottom, const NDMatrix<Ntype>* top)
-    {
-        layerSetUp(m_bottom, m_top);
-        ReShape(m_bottom, m_top);
-    }
-    virtual void layerSetUp(const NDMatrix<Ntype>* bottom, const NDMatrix<Ntype>* top) = 0;
     // Adjust the shapes of top NDMatrix and internal buffers to accommodate the shapes of the bottom
-    virtual void ReShape(const NDMatrix<Ntype>* bottom, const NDMatrix<Ntype>* top) = 0;
+    virtual void ReShape() = 0;
     // Given the bottom NDMatrix, compute the top NDMatrix and the loss
-    inline Ntype Forward(const NDMatrix<Ntype>* bottom, const NDMatrix<Ntype>* top);
+    virtual Ntype Forward() = 0;
     // given the top NDMatrix error gradients, compute the bottom NDMatrix error gradients
-    inline void Backward(const NDMatrix<Ntype>* top, const NDMatrix<Ntype>* bottom);
+    virtual void Backward() = 0;
     // Rerturn the layer type
     virtual inline const string type() const{ return""; }
     
     protected:
-    // use cpu device compute the output
-    virtual void Forward_cpu(const NDMatrix<Ntype>* bottom, const NDMatrix<Ntype>* top) = 0;
-    // Use Gpu device compute the output
-    virtual void Forward_gpu(const NDMatrix<Ntype>* bottom, const NDMatrix<Ntype>* top) = 0;
-    // Use cpu device compute the gradients
-    virtual void Backward_cpu(const NDMatrix<Ntype>* top, const NDMatrix<Ntype>* bottom) = 0;
-    // Use Gpu device compute the gradients
-    virtual void Backward_gpu(const NDMatrix<Ntype>* top, const NDMatrix<Ntype>* bottom) = 0;
-
     NDMatrix<Ntype>* m_bottom;
     NDMatrix<Ntype>* m_top;
     Ntype m_loss;
