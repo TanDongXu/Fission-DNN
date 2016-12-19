@@ -25,4 +25,6 @@
 #define RAMDOM 1;
 #define READ_FROM_FILE 2
 
+void showDevices();
+
 #endif
