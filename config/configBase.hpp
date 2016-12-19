@@ -142,13 +142,39 @@ class ConfigPoolMethod
 class DataLayerConfig : public BaseLayerConfig
 {
     public:
-    DataLayerConfig(string type, string name, string input, string subInput)
+    DataLayerConfig(string type, string name, string input, string subInput, 
+                    string data_transformer, int crop_size, string do_mirror, float scale)
     {
         m_type = type;
         m_name = name;
         m_input = input;
         m_subInput = subInput;
+        m_dataTransFormer = data_transformer;
+        m_cropSize = crop_size;
+        m_doMirror = do_mirror;
+        m_scale = scale;
     }
+
+    bool getDataTransformer() const
+    {
+        if(string("TRUE") == m_dataTransFormer) return true;
+        if(string("FALSE") == m_dataTransFormer) return false;
+        LOG(FATAL) << "Unknown dataTransFormer type "<< m_dataTransFormer;
+    }
+    int getCropSize() const{ return m_cropSize; }
+    bool getDoMirror() const
+    {
+        if(string("TRUE") == m_doMirror) return true;
+        if(string("FALSE") == m_doMirror) return false;
+        LOG(FATAL) << "Unknown do mirror  type "<< m_doMirror;
+    }
+    float getScale() const { return m_scale; }
+
+    private:
+    string m_dataTransFormer;
+    int m_cropSize;
+    string m_doMirror;
+    float m_scale;
 };
 
 class ConvLayerConfig : public BaseLayerConfig
