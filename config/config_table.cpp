@@ -361,11 +361,22 @@ void ConfigTable::showLayersConfig()
 
         }else if(string("DATA") == type)
         {
-            layer = new DataLayerConfig(type ,name, input, sub_input);
+            string isTransformer = getStringVariable(vStrLayers[i], "DATA_TRANSFORMER");
+            int cropSize = getIntVariable(vStrLayers[i], "CROP_SIZE");
+            string mirror = getStringVariable(vStrLayers[i], "DO_MIRROR");
+            float scale = getFloatVariable(vStrLayers[i], "SCALE");
+            layer = new DataLayerConfig(type ,name, input, sub_input, isTransformer, cropSize, mirror, scale);
             LOG(INFO) << endl ;
             LOG(INFO) <<"***********************Data layer**********************";
             cout<< endl;
             LOG(INFO) <<"              NAME : " << name;
+            LOG(INFO) <<"  DATA_TRANSFORMER : " << isTransformer;
+            if(string("TRUE") ==isTransformer)
+            {
+            LOG(INFO) <<"         CROP_SIZE : "<< cropSize;    
+            LOG(INFO) <<"         DO_MIRROR : "<< mirror;    
+            LOG(INFO) <<"             SCALE : "<< scale;    
+            }
 
         }else if(type == string("ACTIVATION"))
         {
