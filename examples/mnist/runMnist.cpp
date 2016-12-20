@@ -1,23 +1,20 @@
 #include<iostream>
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
 #include<glog/logging.h>
 #include<cudnn.h>
 
 #include"runMnist.hpp"
+#include"common/nDMatrix.hpp"
 #include"config/configBase.hpp"
 #include"readData/mnist/data_reader.hpp"
 #include"common/util/util.cuh"
 
 using namespace std;
-using namespace cv;
 
 void runMnist()
 {
-    vector<Mat> trainSetX;
-    vector<Mat> testSetX;
-    Mat trainSetY, testSetY;
+    NDMatrix<float> trainSetX;
+    NDMatrix<float> testSetX;
+    NDMatrix<int> trainSetY, testSetY;
 	// Read the layers configure
     ConfigTable::getInstance()->initConfig("profile/mnist/MnistConfig.txt");
 
@@ -25,10 +22,10 @@ void runMnist()
 	readMnistData(trainSetX, trainSetY, "data/mnist/train-images-idx3-ubyte", "data/mnist/train-labels-idx1-ubyte");
     readMnistData(testSetX, testSetY, "data/mnist/t10k-images-idx3-ubyte", "data/mnist/t10k-labels-idx1-ubyte");
     LOG(INFO) << "*******************************************************";
-    LOG(INFO) << "     Train_set : " << trainSetX[0].rows <<" x "<< trainSetX[0].cols << " features and " << trainSetX.size() << " samples";
-    LOG(INFO) << "   Train_label :   " << trainSetY.rows <<" x "<< trainSetY.rows << " features and " << trainSetY.cols  << " samples";
-    LOG(INFO) << "      Test_set : " << testSetX[0].rows <<" x "<< testSetX[0].cols << " features and " <<  testSetX.size() << " samples";
-    LOG(INFO) << "    Test_label :   " << testSetY.rows <<" x "<< testSetY.rows << " features and " <<  testSetY.cols  << " samples";
+    LOG(INFO) << "     Train_set : " << trainSetX.ND_height() <<" x "<< trainSetX.ND_width() << " features and " << trainSetX.ND_num() << " samples";
+    LOG(INFO) << "   Train_label :   " << trainSetY.ND_height() <<" x "<< trainSetY.ND_width() << " features and " << trainSetY.ND_num() << " samples";
+    LOG(INFO) << "      Test_set : " << testSetX.ND_height() <<" x "<< testSetX.ND_width() << " features and " <<  testSetX.ND_num() << " samples";
+    LOG(INFO) << "    Test_label :   " << testSetY.ND_height() <<" x "<< testSetY.ND_width() << " features and " <<  testSetY.ND_num()  << " samples";
     LOG(INFO) <<"*******************************************************";
 
     int cuda_version = cudnnGetVersion();
