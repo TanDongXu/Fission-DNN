@@ -1,8 +1,8 @@
 /*************************************************************************
-	> File Name: nDMatrix.hpp
-	> Author: TDX 
-	> Mail: SA614149@mail.ustc.edu.cn
-	> Created Time: 2016年12月09日 星期五 14时25分21秒
+    > File Name: nDMatrix.hpp
+    > Author: TDX 
+    > Mail: SA614149@mail.ustc.edu.cn
+    > Created Time: 2016年12月09日 星期五 14时25分21秒
  ************************************************************************/
 #ifndef NDMATRIX_HPP_
 #define NDMATRIX_HPP_

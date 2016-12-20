@@ -300,3 +300,4 @@ void NDMatrix<Ntype>::scale_diff(Ntype scale_factor)
 
 // Instantiate class NDMatrix
 INSTANTIATE_CLASS(NDMatrix);
+template class NDMatrix<int>;
