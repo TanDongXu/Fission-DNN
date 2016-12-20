@@ -9,14 +9,11 @@
 #include<fstream>
 #include<string>
 #include<glog/logging.h>
-#include<opencv2/highgui/highgui.hpp>
-#include<opencv2/highgui.hpp>
-#include<opencv2/imgproc.hpp>
 #include"data_reader.hpp"
-
+#include"test/test.hpp"
+#include<stdlib.h>
 
 using namespace std;
-using namespace cv;
 
 uint32_t swap_endian(uint32_t val)
 {
@@ -24,7 +21,7 @@ uint32_t swap_endian(uint32_t val)
     return (val << 16) | (val >> 16);
 }
 
-void readMnistData(vector<Mat>& dataX, Mat& labelY, string image_filename, string label_filename)
+void readMnistData(NDMatrix<float>& dataX, NDMatrix<int>& labelY, string image_filename, string label_filename)
 {
     ifstream image_file(image_filename, ios::in | ios::binary);
     ifstream label_file(label_filename, ios::in | ios::binary);
@@ -53,25 +50,30 @@ void readMnistData(vector<Mat>& dataX, Mat& labelY, string image_filename, strin
     image_file.read(reinterpret_cast<char*>(&cols), 4);
     cols = swap_endian(cols);
 
-    labelY = Mat::zeros(1, num_labels, CV_8UC1);
+    dataX.ND_reShape(num_items, 1, rows, cols);
+    labelY.ND_reShape(num_labels, 1, 1, 1);
+    // free NDMatrix diff space, here no used diff.
+    dataX.diff().reset();
+    labelY.diff().reset();
+
+    float* pData = dataX.mutable_cpu_data();
+    int* pLabels = labelY.mutable_cpu_data();
+
     for(int item_id = 0; item_id < num_items; ++item_id)
     {
-        Mat tmpMat = Mat::zeros(rows, cols, CV_8UC1);
         for(int r = 0; r < rows; ++r)
         {
             for(int c = 0; c < cols; ++c)
             {
-                uchar temp = 0;
+                char temp = 0;
                 image_file.read((char*)&temp, sizeof(temp));
-                tmpMat.at<uchar>(r, c) = temp;
+                pData[c + cols * r + cols * rows * item_id] = (float)(temp/255.0f);
             }
         }
-        dataX.push_back(tmpMat);
-
         //read labels
-        uchar ltmp = 0;
+        unsigned char ltmp = 0;
         label_file.read((char*)&ltmp, sizeof(ltmp));
-        labelY.at<uchar>(0, item_id) = (uchar)ltmp;
+        pLabels[item_id] = (int)ltmp;
     }
 }
 
