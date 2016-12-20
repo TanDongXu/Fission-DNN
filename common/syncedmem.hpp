@@ -11,6 +11,7 @@
 #include"common.hpp"
 #include<glog/logging.h>
 #include<cuda.h>
+#include<stdlib.h>
 #include<cuda_runtime.h>
 
 inline void mallocHostMem(void**ptr, size_t size, bool use_cuda)
