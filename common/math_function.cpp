@@ -6,6 +6,7 @@
  ************************************************************************/
 
 #include"math_function.hpp"
+#include"glog/logging.h"
 
 // cpu: y = x * alpha + y
 template<>
@@ -18,6 +19,12 @@ template<>
 void cpu_axpy<double>(const int N, const double alpha, const double* X, double* Y)
 {
     cblas_daxpy(N, alpha, X, 1, Y, 1);
+}
+
+template<>
+void cpu_axpy<int>(const int N, const int alpha, const int* X, int * Y)
+{
+    LOG(INFO) << "Not used.";
 }
 
 // cpu: Y = alpha * X + beta * Y
@@ -44,5 +51,11 @@ template<>
 void cpu_scal<double>(const int N, const double alpha, double* X)
 {
     cblas_dscal(N, alpha, X, 1);
+}
+
+template<>
+void cpu_scal<int>(const int N, const int alpha, int* x)
+{
+    LOG(INFO) << "Not used.";
 }
 
