@@ -16,6 +16,8 @@ int main(int argc, char** argv)
     FLAGS_alsologtostderr = 1;
     google::InitGoogleLogging(argv[0]);
 
+
+    cudaSetDevice(1);
     //first test
     cout<<"First test: "<<endl;
     NDMatrix<float> a;
