@@ -87,11 +87,14 @@ file(GLOB Fission-DNN_CU_SOURCES  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "common/*"
     "main.cpp"
     "config/*"
+    "test/*"
+    "layers/*"
     "common/util/*"
     "examples/mnist/*"
     "build/datum.pb.*"
-    "layers/*"
     "readData/mnist/*"
+    "dataTransFormer/*"
+    "net/net.*"
     )
     #  EXCLUDE_FROM_ALL "build/*")
 
