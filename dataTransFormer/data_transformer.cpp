@@ -9,36 +9,26 @@
 #include<glog/logging.h>
 #include<stdlib.h>
 #include<time.h>
+#include<common/common.hpp>
 #include"data_transformer.hpp"
-#include"common/NDMatrix.hpp"
+#include"common/nDMatrix.hpp"
+#include"common/math_function.hpp"
 
 using namespace std;
 
 template<typename Ntype>
-void DataTransformer<Ntype>::Transform(NDMatrix<Ntype>* input_NDMatrix, NDMatrix<Ntype>* transformed_NDMatrix)
+void DataTransformer<Ntype>::Transform(NDMatrix<Ntype>*& input_NDMatrix, NDMatrix<Ntype>*& transformed_NDMatrix, Phase phase)
 {
     const int input_num = input_NDMatrix->ND_num();
     const int input_channels = input_NDMatrix->ND_channels();
     const int input_height = input_NDMatrix->ND_height();
     const int input_width = input_NDMatrix->ND_width();
 
-    if(0 == transformed_NDMatrix->count())
-    {
-        if(m_cropSize)
-        {
-            transformed_NDMatrix->ND_reShape(input_num, input_channels,
-                                          m_cropSize, m_cropSize);
-        }else
-        {
-            transformed_NDMatrix->ND_reShape(input_num, input_channels,
-                                             input_height, input_width);
-        }
-    }
-
     const int num = transformed_NDMatrix->ND_num();
     const int channels = transformed_NDMatrix->ND_channels();
     const int height = transformed_NDMatrix->ND_height();
     const int width = transformed_NDMatrix->ND_width();
+    const int size = transformed_NDMatrix->ND_count();
 
     CHECK_EQ(input_num, num);
     CHECK_EQ(input_channels, channels);
@@ -52,7 +42,7 @@ void DataTransformer<Ntype>::Transform(NDMatrix<Ntype>* input_NDMatrix, NDMatrix
         CHECK_EQ(m_cropSize, height);
         CHECK_EQ(m_cropSize, width);
         //we only do random crop when we do training
-        if(m_phase == TRAIN)
+        if(phase == TRAIN)
         {
             h_off = Rand(input_height - m_cropSize + 1);
             w_off = Rand(input_width - m_cropSize + 1);
@@ -81,19 +71,18 @@ void DataTransformer<Ntype>::Transform(NDMatrix<Ntype>* input_NDMatrix, NDMatrix
         if (m_doMirror) {
           int top_index_w = top_index_h + width - 1;
           for (int w = 0; w < width; ++w) {
-            transformed_data[top_index_w-w] = input_data[data_index_h + w];
+            transfromed_data[top_index_w-w] = input_data[data_index_h + w];
           }
         } else {
           for (int w = 0; w < width; ++w) {
-            transformed_data[top_index_h + w] = input_data[data_index_h + w];
+            transfromed_data[top_index_h + w] = input_data[data_index_h + w];
           }
         }
       }
     }
   }
   if (m_scale != Ntype(1)) {
-    LOG(INFO) << "Scale: " << scale;
-    cpu_scal<Ntype>(size, m_scale, transformed_data);
+    cpu_scal<Ntype>(size, m_scale, transfromed_data);
   }
 
 }
@@ -105,3 +94,5 @@ int DataTransformer<Ntype>::Rand(int n)
     return (rand() % n);
 }
 
+
+INSTANTIATE_CLASS(DataTransformer);

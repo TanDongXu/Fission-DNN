@@ -10,7 +10,7 @@
 
 #include<iostream>
 #include<vector>
-#include"layer/layer.hpp"
+#include"layers/layer.hpp"
 
 using namespace std;
 
@@ -22,17 +22,16 @@ class DataTransformer
     public:
     explicit DataTransformer(int cropSize, bool do_mirror, Ntype scale):
                              m_cropSize(cropSize), m_doMirror(do_mirror), m_scale(scale){}
-    virtual ~DataTransformer(){}
-    void Transform(NDMatrix<Ntype>* input_NDMatrix, NDMatrix<Ntype>* transformed_NDMatrix);
+    ~DataTransformer(){}
+    void Transform(NDMatrix<Ntype>*& input_NDMatrix, NDMatrix<Ntype>*& transformed_NDMatrix, Phase phase);
 
-    protected:
+    private:
     // generate a random integer from Uniform({0,1,......n-1}).
-    virtual int Rand(int n);
+    int Rand(int n);
     // Random number generator
-    Phase m_phase;
     int m_cropSize;
     bool m_doMirror;
     Ntype m_scale;
-}
+};
 
 #endif
