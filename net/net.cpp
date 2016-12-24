@@ -10,6 +10,7 @@
 #include"layers/dataLayer.hpp"
 #include"layers/convLayer.hpp"
 #include"layers/poolLayer.hpp"
+#include"layers/activationLayer.hpp"
 #include"config/configBase.hpp"
 #include"common/nDMatrix.hpp"
 
@@ -50,10 +51,12 @@ void createNet(const int rows, const int cols)
        // }else if(string("SOFTMAX") == (layer->_type))
        // {
        //     baseLayer = new SoftMaxLayer(layer->_name);
-       // }else if(string("ACTIVATION") == (layer->_type))
-       // {
-       //     baseLayer = new ActivationLayer(layer->_name);
-       // }else if(string("LRN") == (layer->_type))
+       // }
+        else if(string("ACTIVATION") == (layer_config->getType()))
+        {
+            base_layer = new ActivationLayer<float>(layer_config->getName());
+        }
+        //else if(string("LRN") == (layer->_type))
        // {
        //     baseLayer = new LRNLayer(layer->_name);
        // }else if(string("INCEPTION") == (layer->_type))
