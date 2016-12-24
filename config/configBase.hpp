@@ -55,6 +55,7 @@ class ConfigTable
     inline int getIter_perEpoch() const { return m_iter_perEpoch; }
     inline int getChannels() const { return m_channels; }
     inline string getSolver_mode() const { return m_solver_mode; }
+    inline float getMomentum() const { return m_momentum; };
     inline BaseLayerConfig* getFirstLayer() const { return m_firstLayer; }
     inline BaseLayerConfig* getLastLayer() const { return m_lastLayer; }
     inline int getLayersNum() const { return m_mapLayers.size(); }
@@ -75,6 +76,7 @@ class ConfigTable
     int m_trainEpochs;
     int m_iter_perEpoch;
     int m_channels;
+    float m_momentum;
     string m_solver_mode;
     string m_textString;
     ConfigNonLinearity* m_nonLinearConfig;
@@ -160,6 +162,7 @@ class DataLayerConfig : public BaseLayerConfig
         if(string("TRUE") == m_dataTransFormer) return true;
         if(string("FALSE") == m_dataTransFormer) return false;
         LOG(FATAL) << "Unknown dataTransFormer type "<< m_dataTransFormer;
+        return false;
     }
     int getCropSize() const{ return m_cropSize; }
     bool getDoMirror() const
@@ -167,6 +170,7 @@ class DataLayerConfig : public BaseLayerConfig
         if(string("TRUE") == m_doMirror) return true;
         if(string("FALSE") == m_doMirror) return false;
         LOG(FATAL) << "Unknown do mirror  type "<< m_doMirror;
+        return false;
     }
     float getScale() const { return m_scale; }
 
@@ -182,7 +186,7 @@ class ConvLayerConfig : public BaseLayerConfig
     public:
     ConvLayerConfig(string type, string name, string input, string subInput,
                     int kernelSize, int pad_h, int pad_w, int stride_h, int stride_w,
-                     int kernelAmount, float init_w, float lrate, float weight_decay)
+                     int kernelAmount, float init_w, float lrate, float weight_decay, string isGaussian)
     {
         m_type = type;
         m_name = name;
@@ -197,6 +201,7 @@ class ConvLayerConfig : public BaseLayerConfig
         m_init_w = init_w;
         m_lrate = lrate;
         m_weight_decay = weight_decay;
+        m_isGaussian = isGaussian;
     }
 
     int getKernelSize() const { return m_kernelSize; }
@@ -208,6 +213,13 @@ class ConvLayerConfig : public BaseLayerConfig
     float getInit_w() const { return m_init_w; }
     float getLrate() const { return m_lrate; }
     float getWeight_decay() const { return m_weight_decay; }
+    bool isGaussian() const
+    {
+        if(string("TRUE") == m_isGaussian) return true;
+        if(string("FALSE") == m_isGaussian) return false;
+        LOG(FATAL) << "Unknown Guassian  type "<< m_isGaussian;
+        return false;
+    }
 
     private:
     int m_kernelSize;
@@ -219,6 +231,7 @@ class ConvLayerConfig : public BaseLayerConfig
     float m_init_w;
     float m_lrate;
     float m_weight_decay;
+    string m_isGaussian;
 };
 
 class PoolLayerConfig : public BaseLayerConfig
@@ -321,7 +334,7 @@ class HiddenLayerConfig : public BaseLayerConfig
 {
     public:
     HiddenLayerConfig(string type, string name, string input, string subInput,
-                      int NumHiddenNeurons, float init_w, float lrate, float weight_decay)
+                      int NumHiddenNeurons, float init_w, float lrate, float weight_decay, string isGaussian)
     {
         m_type = type;
         m_name = name;
@@ -331,18 +344,27 @@ class HiddenLayerConfig : public BaseLayerConfig
         m_init_w = init_w;
         m_lrate = lrate;
         m_weight_decay = weight_decay;
+        m_isGaussian = isGaussian;
     }
 
     int getNumNeurons() const { return m_numHiddenNeurons; }
     float getInit_w() const { return m_init_w; }
     float getLrate() const {  return m_lrate; }
     float getWeight_decay() const { return m_weight_decay; }
+    bool isGaussian() const
+    {
+        if(string("TRUE") == m_isGaussian) return true;
+        if(string("FALSE") == m_isGaussian) return false;
+        LOG(FATAL) << "Unknown Guassian  type "<< m_isGaussian;
+        return false;
+    }
 
     private:
     int m_numHiddenNeurons;
     float m_init_w;
     float m_lrate;
     float m_weight_decay;
+    string m_isGaussian;
 };
 
 class DropOutLayerConfig : public BaseLayerConfig 

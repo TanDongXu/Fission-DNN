@@ -21,6 +21,7 @@ void ConfigTable::initConfig(string config_filename)
     m_solver_mode = getStringVariable(m_textString, "SOLVER_MODE");
     m_batchSize = getIntVariable(m_textString, "BATCH_SIZE");
     m_channels = getIntVariable(m_textString, "CHANNELS");
+    m_momentum = getFloatVariable(m_textString, "MOMENTUM");
     m_trainEpochs = getIntVariable(m_textString, "TRAIN_EPOCHS");
     m_iter_perEpoch = getIntVariable(m_textString, "ITER_PER_EPOCH");
     showLayersConfig();
@@ -275,11 +276,12 @@ void ConfigTable::showLayersConfig()
             int stride_w = getIntVariable(vStrLayers[i], "STRIDE_W");
 
             float init_w = getFloatVariable(vStrLayers[i], "INIT_W");
+            string isGaussian = getStringVariable(vStrLayers[i], "IS_GAUSSIAN");
             float lrate = getFloatVariable(vStrLayers[i], "LEARN_RATE");
             float weight_decay = getFloatVariable(vStrLayers[i], "WEIGHT_DECAY");
 
             layer = new ConvLayerConfig(type, name, input, sub_input, ks, pad_h, pad_w, stride_h,
-                                   stride_w, ka, init_w, lrate, weight_decay);
+                                   stride_w, ka, init_w, lrate, weight_decay, isGaussian);
 
             cout << endl;
             LOG(INFO) << "***********************Conv layer**********************";
@@ -294,6 +296,7 @@ void ConfigTable::showLayersConfig()
             LOG(INFO) << "          STRIDE_H : " << stride_h;
             LOG(INFO) << "          STRIDE_W : " << stride_w;
             LOG(INFO) << "            INIT_W : " << init_w;
+            LOG(INFO) << "       IS_GAUSSIAN : " << isGaussian;
             LOG(INFO) << "        LEARN_RATE : " << lrate;
             LOG(INFO) << "      WEIGHT_DECAY : " << weight_decay;
 
@@ -327,10 +330,11 @@ void ConfigTable::showLayersConfig()
         {
             int NumHidden = getIntVariable(vStrLayers[i], "NUM_NEURONS");
             float init_w = getFloatVariable(vStrLayers[i], "INIT_W");
+            string isGaussian = getStringVariable(vStrLayers[i], "IS_GAUSSIAN");
             float lrate = getFloatVariable(vStrLayers[i], "LEARN_RATE");
             float weight_decay = getFloatVariable(vStrLayers[i], "WEIGHT_DECAY");
 
-            layer = new HiddenLayerConfig(type, name, input, sub_input, NumHidden, init_w, lrate, weight_decay );
+            layer = new HiddenLayerConfig(type, name, input, sub_input, NumHidden, init_w, lrate, weight_decay, isGaussian);
 
             cout << endl ;
             LOG(INFO) <<"***********************Hidden layer********************";
@@ -340,6 +344,7 @@ void ConfigTable::showLayersConfig()
             LOG(INFO) <<"         SUB_INPUT : " << sub_input;
             LOG(INFO) <<"       NUM_NEURONS : " << NumHidden;
             LOG(INFO) <<"            INIT_W : " << init_w;
+            LOG(INFO) << "       IS_GAUSSIAN : " << isGaussian;
             LOG(INFO) <<"        LEARN_RATE : " << lrate;
             LOG(INFO) <<"      WEIGHT_DECAY : " << weight_decay;
 
@@ -370,6 +375,7 @@ void ConfigTable::showLayersConfig()
             LOG(INFO) <<"***********************Data layer**********************";
             cout<< endl;
             LOG(INFO) <<"              NAME : " << name;
+            LOG(INFO) <<"             INPUT : " << input;
             LOG(INFO) <<"  DATA_TRANSFORMER : " << isTransformer;
             if(string("TRUE") ==isTransformer)
             {
