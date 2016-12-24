@@ -12,6 +12,8 @@
 #include<cuda_runtime.h>
 #include<iostream>
 
+#include"common/nDMatrix.hpp"
+
 #define ACTIVATION_SIGMOID 0
 #define ACTIVATION_RELU 1
 #define ACTIVATION_TANH 2;
@@ -26,5 +28,7 @@
 #define READ_FROM_FILE 2
 
 void showDevices();
+template<typename Ntype>
+void createGaussian(NDMatrix<Ntype>* gaussian, float epsilon);
 
 #endif

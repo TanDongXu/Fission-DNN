@@ -1,6 +1,10 @@
 #include<glog/logging.h>
+#include<cmath>
+#include<cstdlib>
+#include<ctime>
 #include"util.cuh"
 #include"common/common.hpp"
+#include"common/nDMatrix.hpp"
 
 // ShowDevices information
 void showDevices()
@@ -130,3 +134,59 @@ __global__ void MultiArrayAdd(float** inputs,
         }
     }
 }
+
+template<typename Ntype>
+void createGaussian(NDMatrix<Ntype>* gaussian, float epsilon)
+{
+    int number = gaussian->ND_num();
+    int channels = gaussian->ND_channels();
+    int rows = gaussian->ND_height();
+    int cols = gaussian->ND_width();
+
+    float dElasticSigma1;
+    float dElasticSigma2;
+
+    int iiMidr = rows >> 1;
+    int iiMidc = cols >> 1;
+
+    srand((unsigned) time(NULL));
+    float _sum = 0.0;
+    for(int num = 0; num < number; num++)
+    {
+        for(int ch = 0; ch < channels; ch++)
+        {
+            dElasticSigma1 = 0.5f + 4.0f * (rand()) / RAND_MAX;
+            dElasticSigma2 = 0.5f + 4.0f * (rand()) / RAND_MAX;
+            for(int row = 0; row < rows; row++)
+            {
+                for(int col = 0; col < cols; col++)
+                {
+                    float val1 = 1.0f / (dElasticSigma1 * dElasticSigma2 * 2.0f * 3.1415926535897932384626433832795f);
+                    float val2 = 1.0f * (row-iiMidr)*(row-iiMidr) / (dElasticSigma1 * dElasticSigma1) + 1.0f * (col-iiMidc)*(col-iiMidc) / (dElasticSigma2 * dElasticSigma2) 
+                        + 2.0f * (row - iiMidr) * (col - iiMidc) / (dElasticSigma1 * dElasticSigma2);
+                    gaussian->mutable_cpu_data()[gaussian->ND_offset(num, ch, row, col)] = val1 * exp(-1.0f * val2);
+                    _sum += gaussian->cpu_data()[gaussian->ND_offset(num, ch, row, col)];
+                }
+            }
+        }
+    }
+        
+    for(int num = 0; num < number; num++)
+    {
+        for(int ch = 0; ch < channels; ch++)
+        {
+            for(int row = 0; row < rows; row++)
+            {
+                for(int col = 0; col < cols; col++)
+                {
+                    float val = gaussian->cpu_data()[gaussian->ND_offset(num, ch, row, col)] / _sum;
+                    gaussian->mutable_cpu_data()[gaussian->ND_offset(num, ch, row, col)] = val * epsilon;
+                }       
+            }   
+        }
+    }
+}
+
+template void createGaussian<float>(NDMatrix<float>* gaussian, float epsilon);
+template void createGaussian<double>(NDMatrix<double>* gaussian, float epsilon);
+
