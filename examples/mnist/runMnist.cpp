@@ -7,6 +7,7 @@
 #include"config/configBase.hpp"
 #include"readData/mnist/data_reader.hpp"
 #include"common/util/util.cuh"
+#include"net/net.hpp"
 
 using namespace std;
 
@@ -32,18 +33,8 @@ void runMnist()
     LOG(INFO) << "cudnnGetVersion(): " << cuda_version << " CUDNN VERSION from cudnn.h: " << CUDNN_VERSION;
     // Show the device information
     showDevices();
-
-   // cout<<endl<<endl<<"Select the way to initial Parameter: "<<endl<<"1.random   2.read from file"<<endl;
-   // int cmd;
-   // cin>> cmd;
-   // if(cmd == 1 || cmd == 2)
-   // 	creatColumnNet(cmd);
-   // else
-   // {
-   // 	cout<<"Init way input Error"<<endl;
-   //     exit(0);
-   // }
-
-   // /*training Network*/
-   // cuTrainNetWork(trainSetX, trainSetY, testSetX, testSetY, batchSize);
+    // Create network
+    createNet(trainSetX.ND_height(), trainSetX.ND_width());
+    // Training Network
+    trainNetWork(trainSetX, trainSetY, testSetX, testSetY);
 }
