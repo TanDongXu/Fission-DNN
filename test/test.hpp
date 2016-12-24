@@ -14,4 +14,6 @@
 template<typename Ntype>
 void printf_NDMatrix_data(NDMatrix<Ntype>* matrix);
 
+void printf_devData(int number, int channels, int height, int width, float* A);
+
 #endif
