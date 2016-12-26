@@ -431,22 +431,19 @@ class SoftMaxLayerConfig : public BaseLayerConfig
 {
     public:
     SoftMaxLayerConfig(string type, string name, string input, string subInput,
-                       int nClasses, float weight_decay)
+                       int nClasses)
     {
         m_type = type;
         m_name = name;
         m_input = input;
         m_subInput = subInput;
         m_nClasses = nClasses;
-        m_weight_decay = weight_decay;
     }
 
     int getNClasses() const { return m_nClasses; }
-    float getWeight_decay() const{ return m_weight_decay; }
 
     private:
     int m_nClasses;
-    float m_weight_decay;
 };
 
 #endif

@@ -351,8 +351,7 @@ void ConfigTable::showLayersConfig()
         }else if(string("SOFTMAX") == type)
         {
             int nclasses = getIntVariable(vStrLayers[i], "NUM_CLASSES");
-            float weight_decay = getFloatVariable(vStrLayers[i], "WEIGHT_DECAY");
-            layer = new SoftMaxLayerConfig(type, name , input, sub_input, nclasses, weight_decay);
+            layer = new SoftMaxLayerConfig(type, name , input, sub_input, nclasses);
 
             cout << endl ;
             LOG(INFO)<<"***********************SoftMax layer*******************";
@@ -361,7 +360,6 @@ void ConfigTable::showLayersConfig()
             LOG(INFO) <<"             INPUT : " << input;
             LOG(INFO) <<"         SUB_INPUT : " << sub_input;
             LOG(INFO) <<"       NUM_CLASSES : " << nclasses;
-            LOG(INFO) <<"      WEIGHT_DECAY : " << weight_decay;
             cout << endl<<endl;
 
         }else if(string("DATA") == type)
