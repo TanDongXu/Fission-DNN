@@ -10,10 +10,8 @@
 template<typename Ntype>
 void ActivationLayer<Ntype>::createHandles()
 {
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&srcTensorDesc));
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&dstTensorDesc));
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&srcDiffTensorDesc));
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&dstDiffTensorDesc));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&bottom_tensorDesc));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&top_tensorDesc));
     CUDNN_CHECK(cudnnCreateActivationDescriptor(&activDesc));
 }
 
@@ -23,10 +21,8 @@ void ActivationLayer<Ntype>::createHandles()
 template<typename Ntype>
 void ActivationLayer<Ntype>::destroyHandles()
 {
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(srcTensorDesc));
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(dstTensorDesc));
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(srcDiffTensorDesc));
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(dstDiffTensorDesc));
+    CUDNN_CHECK(cudnnDestroyTensorDescriptor(bottom_tensorDesc));
+    CUDNN_CHECK(cudnnDestroyTensorDescriptor(top_tensorDesc));
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(activDesc));
 }
 
@@ -51,16 +47,15 @@ ActivationLayer<Ntype>::ActivationLayer(string name)
     this->m_nextLayer.clear();
     
     activDesc = NULL;
-    srcTensorDesc = NULL;
-    dstTensorDesc = NULL;
-    srcDiffTensorDesc = NULL;
-    dstDiffTensorDesc = NULL;
+    bottom_tensorDesc = NULL;
+    top_tensorDesc = NULL;
 
     ActivationLayerConfig * curConfig = (ActivationLayerConfig*) ConfigTable::getInstance()->getLayerByName(this->m_name);
     string preLayerName = curConfig->getInput();
     Layer<Ntype>* prev_Layer = (Layer<Ntype>*) LayerContainer<Ntype>::getInstance()->getLayerByName(preLayerName);
 
     this->m_bottom = prev_Layer->getTop();
+    CHECK(this->m_bottom);
     this->m_inputChannels = this->m_bottom->ND_channels();
     this->m_number = this->m_bottom->ND_num();
     this->m_channels = this->m_bottom->ND_channels();
@@ -83,8 +78,8 @@ ActivationLayer<Ntype>::ActivationLayer(string name)
 //    prevLayer.clear();
 //    nextLayer.clear();
 //    activDesc = NULL;
-//    srcTensorDesc = NULL;
-//    dstTensorDesc = NULL;
+//    bottom_tensorDesc = NULL;
+//    top_tensorDesc = NULL;
 //    srcDiffTensorDesc = NULL;
 //    dstDiffTensorDesc = NULL;
 //
@@ -161,7 +156,7 @@ Ntype ActivationLayer<Ntype>::Forward(Phase Phase)
         		                                CUDNN_PROPAGATE_NAN,
         		                                0.0));
 
-        CUDNN_CHECK(cudnnSetTensor4dDescriptor(srcTensorDesc,
+        CUDNN_CHECK(cudnnSetTensor4dDescriptor(bottom_tensorDesc,
                                               cuDNN<float>::getInstance()->GetTensorFormat(),
                                               cuDNN<float>::getInstance()->GetDataType(),
                                               this->m_number,
@@ -169,7 +164,7 @@ Ntype ActivationLayer<Ntype>::Forward(Phase Phase)
                                               this->m_height,
                                               this->m_width));
 
-        CUDNN_CHECK(cudnnSetTensor4dDescriptor(dstTensorDesc,
+        CUDNN_CHECK(cudnnSetTensor4dDescriptor(top_tensorDesc,
                                               cuDNN<float>::getInstance()->GetTensorFormat(),
                                               cuDNN<float>::getInstance()->GetDataType(),
                                               this->m_number,
@@ -182,10 +177,10 @@ Ntype ActivationLayer<Ntype>::Forward(Phase Phase)
         CUDNN_CHECK(cudnnActivationForward(cuDNN<float>::getInstance()->GetcudnnHandle(),
                                           activDesc,
                                           &alpha,
-                                          srcTensorDesc,
+                                          bottom_tensorDesc,
                                           this->m_bottom->gpu_data(),
                                           &beta,
-                                          dstTensorDesc,
+                                          top_tensorDesc,
                                           this->m_top->mutable_gpu_data()));
     }
 }
@@ -215,67 +210,36 @@ __global__ void LreluBackward(float* srcDiff, float* dstDiff, float* srcData, in
 template<typename Ntype>
 void ActivationLayer<Ntype>::Backward()
 {
-//    if(ActivationMode == ACTIVATION_LRELU)
-//    {
-//        int nIndex = m_nCurBranchIndex;
-//        int data_size = number * channels * height * width;
-//        int num_threads = 256;
-//        int num_block = (data_size + num_threads - 1) / num_threads;
-//
-//        LreluBackward<<<num_block, num_threads>>>(nextLayer[nIndex]->diffData, diffData, srcData, data_size);
-//        cudaThreadSynchronize();
-//    }
-//    else
-//    {
-//        cudnnActivationMode = (cudnnActivationMode_t)ActivationMode;
-//        CUDNN_CHECK(cudnnSetTensor4dDescriptor(dstTensorDesc,
-//                                              cuDNN<float>::getInstance()->GetTensorFormat(),
-//                                              cuDNN<float>::getInstance()->GetDataType(),
-//                                              number,
-//                                              channels,
-//                                              height,
-//                                              width));
-//
-//        CUDNN_CHECK(cudnnSetTensor4dDescriptor(srcDiffTensorDesc,
-//                                              cuDNN<float>::getInstance()->GetTensorFormat(),
-//                                              cuDNN<float>::getInstance()->GetDataType(),
-//                                              number,
-//                                              channels,
-//                                              height,
-//                                              width));
-//
-//        CUDNN_CHECK(cudnnSetTensor4dDescriptor(dstDiffTensorDesc,
-//                                              cuDNN<float>::getInstance()->GetTensorFormat(),
-//                                              cuDNN<float>::getInstance()->GetDataType(),
-//                                              number,
-//                                              channels,
-//                                              height,
-//                                              width));
-//
-//        CUDNN_CHECK(cudnnSetTensor4dDescriptor(srcTensorDesc,
-//                                              cuDNN<float>::getInstance()->GetTensorFormat(),
-//                                              cuDNN<float>::getInstance()->GetDataType(),
-//                                              number,
-//                                              channels,
-//                                              height,
-//                                              width));
-//
-//        float alpha = 1.0f;
-//        float beta = 0.0f;
-//        int nIndex = m_nCurBranchIndex;
-//        CUDNN_CHECK(cudnnActivationBackward(cuDNN<float>::getInstance()->GetcudnnHandle(),
-//                                           activDesc,
-//                                           &alpha,
-//                                           dstTensorDesc,
-//                                           dstData,
-//                                           srcDiffTensorDesc,
-//                                           nextLayer[nIndex]->diffData,
-//                                           srcTensorDesc,
-//                                           srcData,
-//                                           &beta,
-//                                           dstDiffTensorDesc,
-//                                           diffData));
-//    }
+    if(ActivationMode == ACTIVATION_LRELU)
+    {
+        //int nIndex = m_nCurBranchIndex;
+        int data_size = this->m_number * this->m_channels * this->m_height * this->m_width;
+        int num_threads = 256;
+        int num_block = (data_size + num_threads - 1) / num_threads;
+
+        LreluBackward<<<num_block, num_threads>>>((float*)this->m_top->gpu_diff(), (float*)this->m_bottom->mutable_gpu_diff(), (float*)this->m_bottom->gpu_data(), data_size);
+        cudaThreadSynchronize();
+    }
+    else
+    {
+        cudnnActivationMode = (cudnnActivationMode_t)ActivationMode;
+
+        float alpha = 1.0f;
+        float beta = 0.0f;
+        //int nIndex = m_nCurBranchIndex;
+        CUDNN_CHECK(cudnnActivationBackward(cuDNN<float>::getInstance()->GetcudnnHandle(),
+                                           activDesc,
+                                           &alpha,
+                                           top_tensorDesc,
+                                           this->m_top->gpu_data(),
+                                           top_tensorDesc,
+                                           this->m_top->gpu_diff(),
+                                           bottom_tensorDesc,
+                                           this->m_bottom->gpu_data(),
+                                           &beta,
+                                           bottom_tensorDesc,
+                                           this->m_bottom->mutable_gpu_diff()));
+    }
 }
 
 INSTANTIATE_CLASS(ActivationLayer);

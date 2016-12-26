@@ -30,10 +30,8 @@ class ActivationLayer : public Layer<Ntype>
 
     int ActivationMode;
     cudnnActivationMode_t cudnnActivationMode;
-    cudnnTensorDescriptor_t srcTensorDesc;
-    cudnnTensorDescriptor_t dstTensorDesc;
-    cudnnTensorDescriptor_t srcDiffTensorDesc;
-    cudnnTensorDescriptor_t dstDiffTensorDesc;
+    cudnnTensorDescriptor_t bottom_tensorDesc;
+    cudnnTensorDescriptor_t top_tensorDesc;
     cudnnActivationDescriptor_t activDesc;
 };
 
