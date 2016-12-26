@@ -15,11 +15,9 @@
 template<typename Ntype>
 void ConvLayer<Ntype>::createHandles()
 {
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&srcTensorDesc));
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&dstTensorDesc));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&bottom_tensorDesc));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&top_tensorDesc));
     CUDNN_CHECK(cudnnCreateTensorDescriptor(&biasTensorDesc));
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&srcDiffTensorDesc));
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&dstDiffTensorDesc));
     CUDNN_CHECK(cudnnCreateFilterDescriptor(&filterDesc));
     CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&convDesc));
     curandCreateGenerator(&curandGenerator_W, CURAND_RNG_PSEUDO_MTGP32);
@@ -34,11 +32,9 @@ void ConvLayer<Ntype>:: destroyHandles()
 {
     CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(convDesc));
     CUDNN_CHECK(cudnnDestroyFilterDescriptor(filterDesc));
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(srcTensorDesc));
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(dstTensorDesc));
+    CUDNN_CHECK(cudnnDestroyTensorDescriptor(bottom_tensorDesc));
+    CUDNN_CHECK(cudnnDestroyTensorDescriptor(top_tensorDesc));
     CUDNN_CHECK(cudnnDestroyTensorDescriptor(biasTensorDesc));
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(srcDiffTensorDesc));
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(dstDiffTensorDesc));
     curandDestroyGenerator(curandGenerator_W);
    	curandDestroyGenerator(curandGenerator_B);
 }
@@ -57,7 +53,6 @@ void ConvLayer<Ntype>::initRandom(bool isGaussian)
         srand((unsigned)time(NULL));
         //set seed
         curandSetPseudoRandomGeneratorSeed(curandGenerator_W, time(NULL));
-        curandSetPseudoRandomGeneratorSeed(curandGenerator_B, time(NULL));
         curandGenerateNormal(curandGenerator_W, (float*)m_weight->mutable_gpu_data(), this->m_inputChannels * m_kernelSize * m_kernelSize * m_kernelSize, 0, m_epsilon);
     }
     // memset bias
@@ -87,18 +82,19 @@ ConvLayer<Ntype>::ConvLayer(string name)
     this->m_nextLayer.clear();
     m_weight = NULL;
     m_bias = NULL;
+    tmp_Wgrad = NULL;
+    tmp_Bgrad = NULL;
 
     filterDesc = NULL;
     convDesc = NULL;
-    srcTensorDesc = NULL;
-    dstTensorDesc = NULL;
+    bottom_tensorDesc = NULL;
+    top_tensorDesc = NULL;
     biasTensorDesc = NULL;
-    srcDiffTensorDesc = NULL;
-    dstDiffTensorDesc = NULL;
     convFwdAlgo = (cudnnConvolutionFwdAlgo_t)-1;
     convBwdFilterAlgo = (cudnnConvolutionBwdFilterAlgo_t)-1;
     convBwdDataAlgo = (cudnnConvolutionBwdDataAlgo_t)-1;
 
+    m_batchSize = ConfigTable::getInstance()->getBatchSize();
     m_momentum = ConfigTable::getInstance()->getMomentum();
     ConvLayerConfig* curConfig = (ConvLayerConfig*) ConfigTable::getInstance()->getLayerByName(this->m_name);
     bool isGaussian = curConfig->isGaussian();
@@ -129,10 +125,13 @@ ConvLayer<Ntype>::ConvLayer(string name)
     this->m_height = (m_prev_height + 2 * m_pad_h - m_kernelSize) / m_stride_h + 1;
     this->m_width = (m_prev_width + 2 * m_pad_w - m_kernelSize) / m_stride_w + 1;
     CHECK_EQ(this->m_height, this->m_width);
+    CHECK_EQ(this->m_number, m_batchSize);
     
+    mallocDeviceMem((void**)&tmp_Wgrad, this->m_inputChannels * m_kernelAmount * m_kernelSize * m_kernelSize * sizeof(float));
+    mallocDeviceMem((void**)&tmp_Bgrad, m_kernelAmount * 1 * 1 * 1 * sizeof(float));
     // reShape the weight, bias, top , bottom
-    ReShape();
     this->createHandles();
+    ReShape();
     this->initRandom(isGaussian);
 }
 
@@ -157,8 +156,8 @@ ConvLayer<Ntype>::ConvLayer(string name)
 //
 //    filterDesc = NULL;
 //    convDesc = NULL;
-//    srcTensorDesc = NULL;
-//    dstTensorDesc = NULL;
+//    bottom_tensorDesc = NULL;
+//    top_tensorDesc = NULL;
 //    biasTensorDesc = NULL;
 //    srcDiffTensorDesc = NULL;
 //    dstDiffTensorDesc = NULL;
@@ -223,7 +222,7 @@ ConvLayer<Ntype>::~ConvLayer()
  * Forward propagation add Bias
  */
 template<typename Ntype>
-void ConvLayer<Ntype>::addBias(const cudnnTensorDescriptor_t& dstTensorDesc, int c, Ntype* data )
+void ConvLayer<Ntype>::addBias(const cudnnTensorDescriptor_t& top_tensorDesc, int c, Ntype* data )
 {
 
     CUDNN_CHECK(cudnnSetTensor4dDescriptor(biasTensorDesc,
@@ -241,7 +240,7 @@ void ConvLayer<Ntype>::addBias(const cudnnTensorDescriptor_t& dstTensorDesc, int
                               biasTensorDesc,
                               m_bias->gpu_data(),
                               &beta,
-                              dstTensorDesc,
+                              top_tensorDesc,
                               data));
 }
 
@@ -254,7 +253,7 @@ Ntype ConvLayer<Ntype>::Forward(Phase phase)
     this->m_bottom = this->m_prevLayer[0]->getTop();
     //printf_NDMatrix_data(this->m_bottom);
 
-    CUDNN_CHECK(cudnnSetTensor4dDescriptor(srcTensorDesc,
+    CUDNN_CHECK(cudnnSetTensor4dDescriptor(bottom_tensorDesc,
                                           cuDNN<float>::getInstance()->GetTensorFormat(),
                                           cuDNN<float>::getInstance()->GetDataType(),
                                           m_prev_num,
@@ -278,7 +277,7 @@ Ntype ConvLayer<Ntype>::Forward(Phase phase)
                                                1,1,//upscale
                                                CUDNN_CROSS_CORRELATION));
 
-    CUDNN_CHECK(cudnnSetTensor4dDescriptor(dstTensorDesc,
+    CUDNN_CHECK(cudnnSetTensor4dDescriptor(top_tensorDesc,
                                           cuDNN<float>::getInstance()->GetTensorFormat(),
                                           cuDNN<float>::getInstance()->GetDataType(),
                                           this->m_number,
@@ -292,10 +291,10 @@ Ntype ConvLayer<Ntype>::Forward(Phase phase)
     if (cuDNN<float>::getInstance()->getConvFwdAlgorithm() < 0)
     {
         CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(cuDNN<float>::getInstance()->GetcudnnHandle(),
-                                                       srcTensorDesc,
+                                                       bottom_tensorDesc,
                                                        filterDesc,
                                                        convDesc,
-                                                       dstTensorDesc,
+                                                       top_tensorDesc,
                                                        CUDNN_CONVOLUTION_FWD_PREFER_FASTEST,
                                                        0,
                                                        &convFwdAlgo));
@@ -310,10 +309,10 @@ Ntype ConvLayer<Ntype>::Forward(Phase phase)
     size_t convFwdSizeInBytes = 0;
     void* convFwdWorkSpace = NULL;
     CUDNN_CHECK(cudnnGetConvolutionForwardWorkspaceSize(cuDNN<float>::getInstance()->GetcudnnHandle(),
-                                                       srcTensorDesc,
+                                                       bottom_tensorDesc,
                                                        filterDesc,
                                                        convDesc,
-                                                       dstTensorDesc,
+                                                       top_tensorDesc,
                                                        convFwdAlgo,
                                                        &convFwdSizeInBytes));
 
@@ -326,7 +325,7 @@ Ntype ConvLayer<Ntype>::Forward(Phase phase)
     float beta = 0.0f;
     CUDNN_CHECK(cudnnConvolutionForward(cuDNN<float>::getInstance()->GetcudnnHandle(),
                                        &alpha,
-                                       srcTensorDesc,
+                                       bottom_tensorDesc,
                                        this->m_bottom->gpu_data(),
                                        filterDesc,
                                        m_weight->gpu_data(),
@@ -335,11 +334,11 @@ Ntype ConvLayer<Ntype>::Forward(Phase phase)
                                        convFwdWorkSpace,
                                        convFwdSizeInBytes,
                                        &beta,
-                                       dstTensorDesc,
+                                       top_tensorDesc,
                                        this->m_top->mutable_gpu_data()));
 
     /*add bias*/
-    addBias(dstTensorDesc, this->m_channels,this->m_top->mutable_gpu_data());
+    addBias(top_tensorDesc, this->m_channels,this->m_top->mutable_gpu_data());
 
     if (convFwdSizeInBytes != 0)
     {
@@ -355,233 +354,201 @@ Ntype ConvLayer<Ntype>::Forward(Phase phase)
 template<typename Ntype>
 void ConvLayer<Ntype>::Backward()
 {
-//    CUDNN_CHECK(cudnnSetTensor4dDescriptor(dstTensorDesc,
-//                                          cuDNN<float>::getInstance()->GetTensorFormat(),
-//                                          cuDNN<float>::getInstance()->GetDataType(),
-//                                          m_number,
-//                                          m_channels,
-//                                          m_height,
-//                                          m_width));
-//
-//    CUDNN_CHECK(cudnnSetTensor4dDescriptor(srcDiffTensorDesc,
-//                                          cuDNN<float>::getInstance()->GetTensorFormat(),
-//                                          cuDNN<float>::getInstance()->GetDataType(),
-//                                          m_number,
-//                                          m_channels,
-//                                          m_height,
-//                                          m_width));
-//
-//    CUDNN_CHECK(cudnnSetTensor4dDescriptor(srcTensorDesc,
-//                                          cuDNN<float>::getInstance()->GetTensorFormat(),
-//                                          cuDNN<float>::getInstance()->GetDataType(),
-//                                          m_prev_num,
-//                                          m_prev_channels,
-//                                          m_prev_height,
-//                                          m_prev_width));
-//
-//    CUDNN_CHECK(cudnnSetTensor4dDescriptor(dstDiffTensorDesc,
-//                                          cuDNN<float>::getInstance()->GetTensorFormat(),
-//                                          cuDNN<float>::getInstance()->GetDataType(),
-//                                          m_prev_num,
-//                                          m_prev_channels,
-//                                          m_prev_height,
-//                                          m_prev_width));
-//
-//    /*Get the convolutuion function gradient with respect to the bias*/
-//    float alpha = 1.0f;
-//    float beta = 0.0f;
-//    int nIndex = m_nCurBranchIndex;
-//    CUDNN_CHECK(cudnnConvolutionBackwardBias(cuDNN<float>::getInstance()->GetcudnnHandle(),
-//                                            &alpha,
-//                                            srcDiffTensorDesc,
-//                                            nextLayer[nIndex]->getTop().gpu_diff(),
-//                                            &beta,
-//                                            biasTensorDesc,
-//                                            m_bias->mutable_gpu_diff()
-//                                           ));
-//
-//    /*Obtain the best suited algorithm for cudnnConvolutionBackwardFilter*/
-//    if(cuDNN<float>::getInstance()->getConvolutionBwdFilterAlgorithm() < 0)
-//    {
-//    	CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(cuDNN<float>::getInstance()->GetcudnnHandle(),
-//    			                                               srcTensorDesc,
-//    			                                               srcDiffTensorDesc,
-//    			                                               convDesc,
-//    			                                               filterDesc,
-//    			                                               CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST,
-//    			                                               0,
-//    			                                               &convBwdFilterAlgo
-//    			                                               ));
-//
-//    	cuDNN<float>::getInstance()->setConvolutionBwdFilterAlgorithm(convBwdFilterAlgo);
-//    }else
-//    {
-//    	convBwdFilterAlgo = (cudnnConvolutionBwdFilterAlgo_t)cuDNN<float>::getInstance()->getConvolutionBwdFilterAlgorithm();
-//    }
-//
-//    /*Get the GPU memory workspace for cudnnConvolutionBackwardFilter*/
-//    size_t convBwdFilterSizeInBytes = 0;
-//    void* convBwdFilterWorkSpace = NULL;
-//    CUDNN_CHECK(cudnnGetConvolutionBackwardFilterWorkspaceSize(cuDNN<float>::getInstance()->GetcudnnHandle(),
-//    		                                                  srcTensorDesc,
-//    		                                                  srcDiffTensorDesc,
-//    		                                                  convDesc,
-//    		                                                  filterDesc,
-//    		                                                  convBwdFilterAlgo,
-//    		                                                  &convBwdFilterSizeInBytes
-//    /*Alloc GPU memory*/		                                                  ));
-//    if(convBwdFilterSizeInBytes != 0)
-//    {
-//    	CUDA_CHECK(cudaMalloc(&convBwdFilterWorkSpace, convBwdFilterSizeInBytes));
-//    }
-//
-//   /*This function computes the convolution gradient with respect to filter coefficient using the specified algo*/
-//    CUDNN_CHECK(cudnnConvolutionBackwardFilter(cuDNN<float>::getInstance()->GetcudnnHandle(),
-//                                              &alpha,
-//                                              srcTensorDesc,
-//                                              this->m_bottom->gpu_data(),
-//                                              srcDiffTensorDesc,
-//                                              this->nextLayer[nIndex]->getTop().gpu_diff(),
-//                                              convDesc,
-//                                              convBwdFilterAlgo,
-//                                              convBwdFilterWorkSpace,
-//                                              convBwdFilterSizeInBytes,
-//                                              &beta,
-//                                              filterDesc,
-//                                              m_weight->mutable_gpu_diff()));
-//
-//    if (convBwdFilterSizeInBytes != 0)
-//    {
-//        CUDA_CHECK(cudaFree(convBwdFilterWorkSpace));
-//    }
-//
-//    /*Obtaining the best suited algorithm for the cudnnConvolutionBackwardData*/
-//    if(cuDNN<float>::getInstance()->getConvolutionBwdDataAlgorithm() < 0)
-//    {
-//    	CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(cuDNN<float>::getInstance()->GetcudnnHandle(),
-//    			                                            filterDesc,
-//    			                                            srcDiffTensorDesc,
-//    			                                            convDesc,
-//    			                                            dstTensorDesc,
-//    			                                            CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST,
-//    			                                            0,
-//    			                                            &convBwdDataAlgo
-//    			                                            ));
-//    	cuDNN<float>::getInstance()->setConvolutionBwdDataAlgorithm(convBwdDataAlgo);
-//
-//    }else
-//    {
-//    	convBwdDataAlgo = (cudnnConvolutionBwdDataAlgo_t)cuDNN<float>::getInstance()->getConvolutionBwdDataAlgorithm();
-//    }
-//
-//    /*Get the amount of GPU memory for the cudnnConvlotionBackwardData*/
-//    size_t convBwdDataSizeInBytes = 0;
-//    void* convBwdDataWorkSpace = NULL;
-//    /*按照接口说明srcTensorDesc应该是dstTensorDesc的,参考一个代码是用srcTensorDesc*/
-//    CUDNN_CHECK(cudnnGetConvolutionBackwardDataWorkspaceSize(cuDNN<float>::getInstance()->GetcudnnHandle(),
-//    		                                                filterDesc,
-//    		                                                srcDiffTensorDesc,
-//    		                                                convDesc,
-//    		                                                srcTensorDesc,
-//    		                                                convBwdDataAlgo,
-//    		                                                &convBwdDataSizeInBytes
-//    		                                                ));
-//    if(convBwdDataSizeInBytes != 0)
-//    {
-//    	checkCudaErrors(cudaMalloc(&convBwdDataWorkSpace, convBwdDataSizeInBytes));
-//    }
-//
-//    //Note:if use convBwdDataAlgo above,it will return error in running.
-//    // convBwdDataAlgo = CUDNN_CONVOLUTION_BWD_DATA_ALGO_0;
-//    /*Compute the convolution gradient with respect to the output tensor using the specified algo*/
-//    alpha = 1.0f;
-//    beta = 0.0f;
-//    CUDNN_CHECK(cudnnConvolutionBackwardData(cuDNN<float>::getInstance()->GetcudnnHandle(),
-//                                            &alpha,
-//                                            filterDesc,
-//                                            dev_Weight,
-//                                            srcDiffTensorDesc,
-//                                            nextLayer[nIndex]->diffData,
-//                                            convDesc,
-//                                            convBwdDataAlgo,
-//                                            convBwdDataWorkSpace,
-//                                            convBwdDataSizeInBytes,
-//                                            &beta,
-//                                            dstDiffTensorDesc,
-//                                            diffData));
-//
-//    if(convBwdDataSizeInBytes != 0)
-//    {
-//    	checkCudaErrors(cudaFree(convBwdDataWorkSpace));
-//    }
-//
-//    /*
-//     * Update the weights in conv layer
-//     *
-//     * */
-//    alpha = lambda * batchSize;
-//    int size =  kernelAmount * inputAmount * kernelSize * kernelSize;
-//    checkCublasErrors(cublasSaxpy(cuDNN<float>::getInstance()->GetcublasHandle(),
-//                                  size,
-//                                  &alpha,
-//                                  dev_Weight,
-//                                  1,
-//                                  tmp_Wgrad,
-//                                  1));
-//
-//    float scalVal = Momentum;
-//    size =  kernelAmount * inputAmount * kernelSize * kernelSize;
-//    checkCublasErrors(cublasSscal(cuDNN<float>::getInstance()->GetcublasHandle(),
-//                                  size,
-//                                  &scalVal,
-//                                  dev_Wgrad,
-//                                  1));
-//
-//    size = kernelAmount * 1 * 1 * 1;
-//    checkCublasErrors(cublasSscal(cuDNN<float>::getInstance()->GetcublasHandle(),
-//                                  size,
-//                                  &scalVal,
-//                                  dev_Bgrad,
-//                                  1));
-//
-//    scalVal = lrate * 1.0f / batchSize;
-//    size =  kernelAmount * inputAmount * kernelSize * kernelSize;
-//    checkCublasErrors(cublasSaxpy(cuDNN<float>::getInstance()->GetcublasHandle(),
-//                                  size,
-//                                  &scalVal,
-//                                  tmp_Wgrad,
-//                                  1,
-//                                  dev_Wgrad,
-//                                  1));
-//
-//    scalVal = 2 * lrate * 1.0f / batchSize;
-//    size = kernelAmount * 1 * 1 * 1;
-//    checkCublasErrors(cublasSaxpy(cuDNN<float>::getInstance()->GetcublasHandle(),
-//                                  size,
-//                                  &scalVal,
-//                                  tmp_Bgrad,
-//                                  1,
-//                                  dev_Bgrad,
-//                                  1));
-//
-//    alpha = -1.0f;
-//    size =  kernelAmount * inputAmount * kernelSize * kernelSize;
-//    checkCublasErrors(cublasSaxpy(cuDNN<float>::getInstance()->GetcublasHandle(),
-//                                  size,
-//                                  &alpha,
-//                                  dev_Wgrad,
-//                                  1,
-//                                  dev_Weight,
-//                                  1));
-//
-//    size = kernelAmount * 1 * 1 * 1;
-//    checkCublasErrors(cublasSaxpy(cuDNN<float>::getInstance()->GetcublasHandle(),
-//                                  size,
-//                                  &alpha,
-//                                  dev_Bgrad,
-//                                  1,
-//                                  dev_Bias,
-//                                  1));
+    // Get the convolutuion function gradient with respect to the bias
+    float alpha = 1.0f;
+    float beta = 0.0f;
+    //int nIndex = m_nCurBranchIndex;
+    CUDNN_CHECK(cudnnConvolutionBackwardBias(cuDNN<float>::getInstance()->GetcudnnHandle(),
+                                            &alpha,
+                                            top_tensorDesc,
+                                            this->m_top->gpu_diff(),
+                                            &beta,
+                                            biasTensorDesc,
+                                            m_bias->mutable_gpu_diff()
+                                           ));
+
+    // Obtain the best suited algorithm for cudnnConvolutionBackwardFilter
+    if(cuDNN<float>::getInstance()->getConvolutionBwdFilterAlgorithm() < 0)
+    {
+    	CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(cuDNN<float>::getInstance()->GetcudnnHandle(),
+    			                                               bottom_tensorDesc,
+    			                                               top_tensorDesc,
+    			                                               convDesc,
+    			                                               filterDesc,
+    			                                               CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST,
+    			                                               0,
+    			                                               &convBwdFilterAlgo
+    			                                               ));
+
+    	cuDNN<float>::getInstance()->setConvolutionBwdFilterAlgorithm(convBwdFilterAlgo);
+    }else
+    {
+    	convBwdFilterAlgo = (cudnnConvolutionBwdFilterAlgo_t)cuDNN<float>::getInstance()->getConvolutionBwdFilterAlgorithm();
+    }
+
+    /*Get the GPU memory workspace for cudnnConvolutionBackwardFilter*/
+    size_t convBwdFilterSizeInBytes = 0;
+    void* convBwdFilterWorkSpace = NULL;
+    CUDNN_CHECK(cudnnGetConvolutionBackwardFilterWorkspaceSize(cuDNN<float>::getInstance()->GetcudnnHandle(),
+    		                                                  bottom_tensorDesc,
+    		                                                  top_tensorDesc,
+    		                                                  convDesc,
+    		                                                  filterDesc,
+    		                                                  convBwdFilterAlgo,
+    		                                                  &convBwdFilterSizeInBytes
+    /*Alloc GPU memory*/		                                                  ));
+    if(convBwdFilterSizeInBytes != 0)
+    {
+    	CUDA_CHECK(cudaMalloc(&convBwdFilterWorkSpace, convBwdFilterSizeInBytes));
+    }
+
+   /*This function computes the convolution gradient with respect to filter coefficient using the specified algo*/
+    CUDNN_CHECK(cudnnConvolutionBackwardFilter(cuDNN<float>::getInstance()->GetcudnnHandle(),
+                                              &alpha,
+                                              bottom_tensorDesc,
+                                              this->m_bottom->gpu_data(),
+                                              top_tensorDesc,
+                                              this->m_top->gpu_diff(),
+                                              convDesc,
+                                              convBwdFilterAlgo,
+                                              convBwdFilterWorkSpace,
+                                              convBwdFilterSizeInBytes,
+                                              &beta,
+                                              filterDesc,
+                                              m_weight->mutable_gpu_diff()));
+
+    if (convBwdFilterSizeInBytes != 0)
+    {
+        CUDA_CHECK(cudaFree(convBwdFilterWorkSpace));
+    }
+
+    /*Obtaining the best suited algorithm for the cudnnConvolutionBackwardData*/
+    if(cuDNN<float>::getInstance()->getConvolutionBwdDataAlgorithm() < 0)
+    {
+    	CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(cuDNN<float>::getInstance()->GetcudnnHandle(),
+    			                                            filterDesc,
+    			                                            top_tensorDesc,
+    			                                            convDesc,
+    			                                            top_tensorDesc,
+    			                                            CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST,
+    			                                            0,
+    			                                            &convBwdDataAlgo
+    			                                            ));
+    	cuDNN<float>::getInstance()->setConvolutionBwdDataAlgorithm(convBwdDataAlgo);
+
+    }else
+    {
+    	convBwdDataAlgo = (cudnnConvolutionBwdDataAlgo_t)cuDNN<float>::getInstance()->getConvolutionBwdDataAlgorithm();
+    }
+
+    /*Get the amount of GPU memory for the cudnnConvlotionBackwardData*/
+    size_t convBwdDataSizeInBytes = 0;
+    void* convBwdDataWorkSpace = NULL;
+    /*按照接口说明bottom_tensorDesc应该是top_tensorDesc的,参考一个代码是用bottom_tensorDesc*/
+    CUDNN_CHECK(cudnnGetConvolutionBackwardDataWorkspaceSize(cuDNN<float>::getInstance()->GetcudnnHandle(),
+    		                                                filterDesc,
+    		                                                top_tensorDesc,
+    		                                                convDesc,
+    		                                                bottom_tensorDesc,
+    		                                                convBwdDataAlgo,
+    		                                                &convBwdDataSizeInBytes
+    		                                                ));
+    if(convBwdDataSizeInBytes != 0)
+    {
+    	CUDA_CHECK(cudaMalloc(&convBwdDataWorkSpace, convBwdDataSizeInBytes));
+    }
+
+    //Note:if use convBwdDataAlgo above,it will return error in running.
+    // convBwdDataAlgo = CUDNN_CONVOLUTION_BWD_DATA_ALGO_0;
+    /*Compute the convolution gradient with respect to the output tensor using the specified algo*/
+    alpha = 1.0f;
+    beta = 0.0f;
+    CUDNN_CHECK(cudnnConvolutionBackwardData(cuDNN<float>::getInstance()->GetcudnnHandle(),
+                                            &alpha,
+                                            filterDesc,
+                                            m_weight->gpu_data(),
+                                            top_tensorDesc,
+                                            this->m_top->gpu_diff(),
+                                            convDesc,
+                                            convBwdDataAlgo,
+                                            convBwdDataWorkSpace,
+                                            convBwdDataSizeInBytes,
+                                            &beta,
+                                            bottom_tensorDesc,
+                                            this->m_bottom->mutable_gpu_diff()));
+
+    if(convBwdDataSizeInBytes != 0)
+    {
+    	CUDA_CHECK(cudaFree(convBwdDataWorkSpace));
+    }
+
+    /*
+     * Update the weights in conv layer
+     *
+     * */
+    alpha = m_lambda * m_batchSize;
+    int size =  m_kernelAmount * this->m_inputChannels * m_kernelSize * m_kernelSize;
+    CUBLAS_CHECK(cublasSaxpy(cuDNN<float>::getInstance()->GetcublasHandle(),
+                                  size,
+                                  &alpha,
+                                  (float*)m_weight->mutable_gpu_data(),
+                                  1,
+                                  tmp_Wgrad,
+                                  1));
+
+    float scalVal = m_momentum;
+    size =  m_kernelAmount * this->m_inputChannels * m_kernelSize * m_kernelSize;
+    CUBLAS_CHECK(cublasSscal(cuDNN<float>::getInstance()->GetcublasHandle(),
+                                  size,
+                                  &scalVal,
+                                  (float*)m_weight->mutable_gpu_diff(),
+                                  1));
+
+    size = m_kernelAmount * 1 * 1 * 1;
+    CUBLAS_CHECK(cublasSscal(cuDNN<float>::getInstance()->GetcublasHandle(),
+                                  size,
+                                  &scalVal,
+                                  (float*)m_bias->mutable_gpu_diff(),
+                                  1));
+
+    scalVal = this->m_lrate * 1.0f / m_batchSize;
+    size =  m_kernelAmount * this->m_inputChannels * m_kernelSize * m_kernelSize;
+    CUBLAS_CHECK(cublasSaxpy(cuDNN<float>::getInstance()->GetcublasHandle(),
+                                  size,
+                                  &scalVal,
+                                  tmp_Wgrad,
+                                  1,
+                                  (float*)m_weight->mutable_gpu_diff(),
+                                  1));
+
+    scalVal = 2 * this->m_lrate * 1.0f / m_batchSize;
+    size = m_kernelAmount * 1 * 1 * 1;
+    CUBLAS_CHECK(cublasSaxpy(cuDNN<float>::getInstance()->GetcublasHandle(),
+                                  size,
+                                  &scalVal,
+                                  tmp_Bgrad,
+                                  1,
+                                  (float*)m_bias->mutable_gpu_diff(),
+                                  1));
+
+    alpha = -1.0f;
+    size =  m_kernelAmount * this->m_inputChannels * m_kernelSize * m_kernelSize;
+    CUBLAS_CHECK(cublasSaxpy(cuDNN<float>::getInstance()->GetcublasHandle(),
+                                  size,
+                                  &alpha,
+                                  (float*)m_weight->mutable_gpu_diff(),
+                                  1,
+                                  (float*)m_weight->mutable_gpu_data(),
+                                  1));
+
+    size = m_kernelAmount * 1 * 1 * 1;
+    CUBLAS_CHECK(cublasSaxpy(cuDNN<float>::getInstance()->GetcublasHandle(),
+                                  size,
+                                  &alpha,
+                                  (float*)m_bias->mutable_gpu_diff(),
+                                  1,
+                                  (float*)m_bias->mutable_gpu_data(),
+                                  1));
 }
 
 

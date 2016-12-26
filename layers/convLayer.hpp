@@ -32,9 +32,11 @@ class ConvLayer : public Layer<Ntype>
 
     NDMatrix<Ntype>* m_weight;
     NDMatrix<Ntype>* m_bias;
+    float* tmp_Wgrad, *tmp_Bgrad;
     float m_lambda;
     float m_epsilon;
     float m_momentum;
+    int m_batchSize;
     int m_kernelSize;
     int m_pad_h;
     int m_pad_w;
@@ -46,11 +48,9 @@ class ConvLayer : public Layer<Ntype>
     int m_prev_height;
     int m_prev_width;
 
-    cudnnTensorDescriptor_t srcTensorDesc;
-    cudnnTensorDescriptor_t dstTensorDesc;
+    cudnnTensorDescriptor_t bottom_tensorDesc;
+    cudnnTensorDescriptor_t top_tensorDesc;
     cudnnTensorDescriptor_t biasTensorDesc;
-    cudnnTensorDescriptor_t srcDiffTensorDesc;
-    cudnnTensorDescriptor_t dstDiffTensorDesc;
     cudnnFilterDescriptor_t filterDesc;
     cudnnConvolutionDescriptor_t convDesc;
     cudnnConvolutionFwdAlgo_t convFwdAlgo;
