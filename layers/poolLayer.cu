@@ -10,11 +10,9 @@
 template<typename Ntype>
 void PoolLayer<Ntype>:: createHandles()
 {
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&srcTensorDesc));
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&dstTensorDesc));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&bottom_tensorDesc));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&top_tensorDesc));
     CUDNN_CHECK(cudnnCreatePoolingDescriptor(&poolingDesc));
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&srcDiffTensorDesc));
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&dstDiffTensorDesc));
 }
 
 /*
@@ -24,10 +22,8 @@ template<typename Ntype>
 void PoolLayer<Ntype>:: destroyHandles()
 {
     CUDNN_CHECK(cudnnDestroyPoolingDescriptor(poolingDesc));
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(srcTensorDesc));
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(dstTensorDesc));
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(srcDiffTensorDesc));
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(dstDiffTensorDesc));
+    CUDNN_CHECK(cudnnDestroyTensorDescriptor(bottom_tensorDesc));
+    CUDNN_CHECK(cudnnDestroyTensorDescriptor(top_tensorDesc));
 }
 
 template<typename Ntype>
@@ -57,11 +53,9 @@ PoolLayer<Ntype>::PoolLayer(string name)
     this->m_prevLayer.clear();
     this->m_nextLayer.clear();
 
-    srcTensorDesc = NULL;
-    dstTensorDesc = NULL;
+    bottom_tensorDesc = NULL;
+    top_tensorDesc = NULL;
     poolingDesc = NULL;
-    srcDiffTensorDesc = NULL;
-    dstDiffTensorDesc = NULL;
 
     PoolLayerConfig* curConfig = (PoolLayerConfig*) ConfigTable::getInstance()->getLayerByName(this->m_name);
     string prevLayerName = curConfig->getInput();
@@ -77,6 +71,7 @@ PoolLayer<Ntype>::PoolLayer(string name)
     CHECK_EQ(m_stride_h, m_stride_w);
 
     this->m_bottom = prev_Layer->getTop();
+    CHECK(this->m_bottom);
     m_prev_num = this->m_bottom->ND_num();
     m_prev_channels = this->m_bottom->ND_channels();
     m_prev_height = this->m_bottom->ND_height();
@@ -103,8 +98,8 @@ PoolLayer<Ntype>::PoolLayer(string name)
 //    m_poolMethod = NULL;
 //    prevLayer.clear();
 //    nextLayer.clear();
-//    srcTensorDesc = NULL;
-//    dstTensorDesc = NULL;
+//    bottom_tensorDesc = NULL;
+//    top_tensorDesc = NULL;
 //    poolingDesc = NULL;
 //    srcDiffTensorDesc = NULL;
 //    dstDiffTensorDesc = NULL;
@@ -159,7 +154,7 @@ Ntype PoolLayer<Ntype>::Forward(Phase Phase)
                                            m_stride_h,
                                            m_stride_w));//stride
 
-    CUDNN_CHECK(cudnnSetTensor4dDescriptor(srcTensorDesc,
+    CUDNN_CHECK(cudnnSetTensor4dDescriptor(bottom_tensorDesc,
                                           cuDNN<float>::getInstance()->GetTensorFormat(),
                                           cuDNN<float>::getInstance()->GetDataType(),
                                           m_prev_num,
@@ -167,7 +162,7 @@ Ntype PoolLayer<Ntype>::Forward(Phase Phase)
                                           m_prev_height,
                                           m_prev_width));
 
-    CUDNN_CHECK(cudnnSetTensor4dDescriptor(dstTensorDesc,
+    CUDNN_CHECK(cudnnSetTensor4dDescriptor(top_tensorDesc,
                                           cuDNN<float>::getInstance()->GetTensorFormat(),
                                           cuDNN<float>::getInstance()->GetDataType(),
                                           this->m_number,
@@ -180,10 +175,10 @@ Ntype PoolLayer<Ntype>::Forward(Phase Phase)
     CUDNN_CHECK(cudnnPoolingForward(cuDNN<float>::getInstance()->GetcudnnHandle(),
                                    poolingDesc,
                                    &alpha,
-                                   srcTensorDesc,
+                                   bottom_tensorDesc,
                                    this->m_bottom->gpu_data(),
                                    &beta,
-                                   dstTensorDesc,
+                                   top_tensorDesc,
                                    this->m_top->mutable_gpu_data()));
 }
 
@@ -193,53 +188,21 @@ Ntype PoolLayer<Ntype>::Forward(Phase Phase)
 template<typename Ntype>
 void PoolLayer<Ntype>::Backward()
 {
-//    CUDNN_CHECK(cudnnSetTensor4dDescriptor(dstTensorDesc,
-//                                          cuDNN<float>::getInstance()->GetTensorFormat(),
-//                                          cuDNN<float>::getInstance()->GetDataType(),
-//                                          number,
-//                                          channels,
-//                                          height,
-//                                          width));
-//
-//    CUDNN_CHECK(cudnnSetTensor4dDescriptor(srcDiffTensorDesc,
-//                                          cuDNN<float>::getInstance()->GetTensorFormat(),
-//                                          cuDNN<float>::getInstance()->GetDataType(),
-//                                          number,
-//                                          channels,
-//                                          height,
-//                                          width));
-//
-//    CUDNN_CHECK(cudnnSetTensor4dDescriptor(srcTensorDesc,
-//                                          cuDNN<float>::getInstance()->GetTensorFormat(),
-//                                          cuDNN<float>::getInstance()->GetDataType(),
-//                                          prev_num,
-//                                          prev_channels,
-//                                          prev_height,
-//                                          prev_width));
-//
-//    CUDNN_CHECK(cudnnSetTensor4dDescriptor(dstDiffTensorDesc,
-//                                          cuDNN<float>::getInstance()->GetTensorFormat(),
-//                                          cuDNN<float>::getInstance()->GetDataType(),
-//                                          prev_num,
-//                                          prev_channels,
-//                                          prev_height,
-//                                          prev_width));
-//
-//    float alpha = 1.0f;
-//    float beta = 0.0;
-//    int nIndex = m_nCurBranchIndex;
-//    CUDNN_CHECK(cudnnPoolingBackward(cuDNN<float>::getInstance()->GetcudnnHandle(),
-//                                    poolingDesc,
-//                                    &alpha,
-//                                    dstTensorDesc,
-//                                    dstData,
-//                                    srcDiffTensorDesc,
-//                                    nextLayer[nIndex]->diffData,
-//                                    srcTensorDesc,
-//                                    srcData,
-//                                    &beta,
-//                                    dstDiffTensorDesc,
-//                                    diffData));
+    float alpha = 1.0f;
+    float beta = 0.0;
+    //int nIndex = m_nCurBranchIndex;
+    CUDNN_CHECK(cudnnPoolingBackward(cuDNN<float>::getInstance()->GetcudnnHandle(),
+                                    poolingDesc,
+                                    &alpha,
+                                    top_tensorDesc,
+                                    this->m_top->gpu_data(),
+                                    top_tensorDesc,
+                                    this->m_top->gpu_diff(),
+                                    bottom_tensorDesc,
+                                    this->m_bottom->gpu_data(),
+                                    &beta,
+                                    bottom_tensorDesc,
+                                    this->m_bottom->mutable_gpu_diff()));
 }
 
 INSTANTIATE_CLASS(PoolLayer);

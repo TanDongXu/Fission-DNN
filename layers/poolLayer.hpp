@@ -34,11 +34,9 @@ class PoolLayer : public Layer<Ntype>
     void destroyHandles();
 
     cudnnPoolingMode_t poolingMode;
-    cudnnTensorDescriptor_t srcTensorDesc;
-    cudnnTensorDescriptor_t dstTensorDesc;
+    cudnnTensorDescriptor_t bottom_tensorDesc;
+    cudnnTensorDescriptor_t top_tensorDesc;
     cudnnPoolingDescriptor_t poolingDesc;
-    cudnnTensorDescriptor_t srcDiffTensorDesc;
-    cudnnTensorDescriptor_t dstDiffTensorDesc;
     string m_pool_Type;
     int m_poolDim;
     int m_pad_h;
