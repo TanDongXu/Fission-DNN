@@ -62,7 +62,6 @@ DataLayer<Ntype>::DataLayer(string name, const int rows, const int cols)
         m_scale = first_layer->getScale();
         // create object
         m_data_transformer = new DataTransformer<Ntype>(m_cropSize, m_doMirror, m_scale);
-        cout<< m_cropSize<<" "<<m_doMirror<<" "<<m_scale<<endl;
     }
 
     this->m_number = m_batchSize;
@@ -71,7 +70,6 @@ DataLayer<Ntype>::DataLayer(string name, const int rows, const int cols)
     this->m_width = cols;
     // reshape the top and label
     ReShape();
-   cout<< this->m_bottom->ND_shape_string()<<endl;;
 }
 
 /*
