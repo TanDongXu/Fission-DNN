@@ -11,6 +11,10 @@
 #include"layers/convLayer.hpp"
 #include"layers/poolLayer.hpp"
 #include"layers/activationLayer.hpp"
+#include"layers/dropOutLayer.hpp"
+#include"layers/hiddenLayer.hpp"
+#include"layers/LRNLayer.hpp"
+#include"layers/softMaxLayer.hpp"
 #include"config/configBase.hpp"
 #include"common/nDMatrix.hpp"
 
@@ -44,30 +48,24 @@ void createNet(const int rows, const int cols)
         }else if(string("POOLING") == (layer_config->getType()))
         {
             base_layer = new PoolLayer<float>(layer_config->getName());
+        }else if(string("HIDDEN") == (layer_config->getType()))
+        {
+            base_layer = new HiddenLayer<float>(layer_config->getName());
+        }else if(string("SOFTMAX") == (layer_config->getType()))
+        {
+           base_layer = new SoftMaxLayer<float>(layer_config->getName());
         }
-        //else if(string("HIDDEN") == (layer->_type))
-       // {
-       //     baseLayer = new HiddenLayer(layer->_name, sign);
-       // }else if(string("SOFTMAX") == (layer->_type))
-       // {
-       //     baseLayer = new SoftMaxLayer(layer->_name);
-       // }
         else if(string("ACTIVATION") == (layer_config->getType()))
         {
             base_layer = new ActivationLayer<float>(layer_config->getName());
+        }else if(string("LRN") == (layer_config->getType()))
+        {
+           base_layer = new LRNLayer<float>(layer_config->getName());
+        }else if(string("DROPOUT") == (layer_config->getType()))
+        {
+            base_layer = new DropOutLayer<float>(layer_config->getName());
         }
-        //else if(string("LRN") == (layer->_type))
-       // {
-       //     baseLayer = new LRNLayer(layer->_name);
-       // }else if(string("INCEPTION") == (layer->_type))
-       // {
-       //     baseLayer = new InceptionLayer(layer->_name, sign);
-       // }else if(string("DROPOUT") == (layer->_type))
-       // {
-       //     baseLayer = new DropOutLayer(layer->_name);
-       // }
 
-        cout<<layer_config->getInput()<<" "<<layer_config->getName()<<endl;;
         LayerContainer<float>::getInstance()->storelayer(layer_config->getInput(), layer_config->getName(), base_layer);
         for(int i = 0; i < layer_config->getVecNext().size(); i++){
             if( hash.find( layer_config->getVecNext()[i]) == hash.end()){
@@ -125,7 +123,6 @@ void predictTestData(NDMatrix<float>& testSetX, NDMatrix<int>& testSetY)
     DataLayer<float>* data_layer = static_cast<DataLayer<float>*>(LayerContainer<float>::getInstance()->getLayerByName("data"));
     int batchSize = ConfigTable::getInstance()->getBatchSize();
     int example_size = testSetX.ND_num();
-    cout<<example_size<<endl;
 
     for(int i = 0; i < ((example_size + batchSize - 1) / batchSize); i++)
     {
@@ -134,30 +131,32 @@ void predictTestData(NDMatrix<float>& testSetX, NDMatrix<int>& testSetY)
     }
 }
 
-///*linear structure training network*/
-//void getNetWorkCost(float&Momentum)
-//{
-//    resultPredict("train");
-//    configBase* config = (configBase*) config::instanceObjtce()->getLastLayer();
-//    queue<configBase*>que;
-//    que.push(config);
-//    set<configBase*>hash;
-//    hash.insert(config);
-//    while(!que.empty()){
-//        config = que.front();
-//        que.pop();
-//        LayersBase* layer = (LayersBase*)Layers::instanceObject()->getLayer(config->_name);
-//        layer->backwardPropagation(Momentum);
-//
-//        for(int i = 0; i < config->_prev.size(); i++){
-//            if( hash.find( config->_prev[i] ) == hash.end()){
-//                hash.insert(config->_prev[i]);
-//                que.push(config->_prev[i]);
-//            }
-//        }
-//    }
-//}
-//
+// Linear structure training network
+void getNetWorkCost()
+{
+    // forward
+    resultPredict(TRAIN);
+    //backward
+    BaseLayerConfig* config = (BaseLayerConfig*) ConfigTable::getInstance()->getLastLayer();
+    queue<BaseLayerConfig*>que;
+    que.push(config);
+    set<BaseLayerConfig*>hash;
+    hash.insert(config);
+    while(!que.empty()){
+        config = que.front();
+        que.pop();
+        Layer<float>* layer = (Layer<float>*)LayerContainer<float>::getInstance()->getLayerByName(config->getName());
+        layer->Backward();
+
+        for(int i = 0; i < config->getVecPrev().size(); i++){
+            if( hash.find( config->getVecPrev()[i] ) == hash.end()){
+                hash.insert(config->getVecPrev()[i]);
+                que.push(config->getVecPrev()[i]);
+            }
+        }
+    }
+}
+
 //std::vector<configBase*> g_vQue;
 ////std::map<LayersBase*, size_t> g_vFissNode;
 //std::vector<SoftMaxLayer*> g_vBranchResult;
@@ -340,7 +339,6 @@ void trainNetWork(NDMatrix<float>& trainSetX, NDMatrix<int>& trainSetY,
     int iter_per_epo = ConfigTable::getInstance()->getIter_perEpoch();
     float momentum = ConfigTable::getInstance()->getMomentum();
     int layerNum = LayerContainer<float>::getInstance()->getLayersNum();
-    int epoCount[]={100,300,500,700,900,1100,1300,1500,1700,80};
     int id = 0;
 
     DataLayer<float>* data_layer = static_cast<DataLayer<float>*>(LayerContainer<float>::getInstance()->getLayerByName("data"));
@@ -358,7 +356,7 @@ void trainNetWork(NDMatrix<float>& trainSetX, NDMatrix<int>& trainSetY,
             for(int iter = 0 ; iter < iter_per_epo; iter++)
             {
                 data_layer->random_load_batch(trainSetX, trainSetY);
-                //getNetWorkCost(Momentum);
+                getNetWorkCost();
             }
      //   }
      //   else{
@@ -371,7 +369,7 @@ void trainNetWork(NDMatrix<float>& trainSetX, NDMatrix<int>& trainSetY,
      //       }
      //   }
 //
-//        inEnd = clock();
+        inEnd = clock();
 //
 //        config = (configBase*) config::instanceObjtce()->getFirstLayers();
 //        //adjust learning rate
@@ -436,21 +434,21 @@ void trainNetWork(NDMatrix<float>& trainSetX, NDMatrix<int>& trainSetY,
 //            if(id>9) id=9;
 //        }
 //
-//        /*test network*/
-//        cout<<"epochs: "<<epo<<" ,Time: "<<(inEnd - inStart)/CLOCKS_PER_SEC<<"s,";
-//        if( DFS_TEST == false){
-//            predictTestData( testData, testLabel, batchSize );
-//        }
-//        else{
-//            VoteLayer::instance()->clear();
-//            static float fMax = 0;
-//            configBase* config = (configBase*) config::instanceObjtce()->getFirstLayers();
-//            dfsResultPredict(config, testData, testLabel, batchSize);
-//            float fTest = VoteLayer::instance()->result();
-//            if ( fMax < fTest ) fMax = fTest;
-//            printf(" test_result %f/%f ", fTest, fMax);
-//        }
-//        cout<<" ,Momentum: "<<Momentum<<endl;
+        /*test network*/
+        cout << "epochs: " << epo << " ,Time: " << (inEnd - inStart)/CLOCKS_PER_SEC<<"s,";
+        //if( DFS_TEST == false){
+            predictTestData( testSetX, testSetY);
+        //}
+        //else{
+        //    //VoteLayer::instance()->clear();
+        //    static float fMax = 0;
+        //    BaseLayerConfig* config = (BaseLayerConfig*) ConfigTable::getInstance()->getFirstLayer();
+        //    dfsResultPredict(config, testData, testLabel, batchSize);
+        //    float fTest = VoteLayer::instance()->result();
+        //    if ( fMax < fTest ) fMax = fTest;
+        //    printf(" test_result %f/%f ", fTest, fMax);
+        //}
+        cout << " ,Momentum: " << momentum << endl;
 //
 //        /*在进入下一次训练之前进行裂变*/
 //        if (DFS_TRAINING == true && FISS_TRAINING == true )
