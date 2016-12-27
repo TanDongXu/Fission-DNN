@@ -45,15 +45,15 @@ void ConvLayer<Ntype>:: destroyHandles()
 template<typename Ntype>
 void ConvLayer<Ntype>::initRandom(bool isGaussian)
 {
+    srand((unsigned)time(NULL));
     if(isGaussian)
     {
         createGaussian<Ntype>(m_weight, m_epsilon);
     }else
     {
-        srand((unsigned)time(NULL));
         //set seed
         curandSetPseudoRandomGeneratorSeed(curandGenerator_W, time(NULL));
-        curandGenerateNormal(curandGenerator_W, (float*)m_weight->mutable_gpu_data(), this->m_inputChannels * m_kernelSize * m_kernelSize * m_kernelSize, 0, m_epsilon);
+        curandGenerateNormal(curandGenerator_W, (float*)m_weight->mutable_gpu_data(), m_kernelAmount * this->m_inputChannels * m_kernelSize * m_kernelSize, 0, m_epsilon);
     }
     // memset bias
     gpuMemoryMemset(m_bias->mutable_gpu_data(), m_kernelAmount * 1 * 1 * 1 * sizeof(Ntype));
@@ -63,7 +63,7 @@ template<typename Ntype>
 void ConvLayer<Ntype>::ReShape()
 {
     this->m_top = new NDMatrix<Ntype>(this->m_number, this->m_channels, this->m_height, this->m_width);
-    m_weight = new NDMatrix<Ntype>(this->m_inputChannels, m_kernelAmount, m_kernelSize, m_kernelSize);
+    m_weight = new NDMatrix<Ntype>(m_kernelAmount, this->m_inputChannels, m_kernelSize, m_kernelSize);
     m_bias = new NDMatrix<Ntype>(m_kernelAmount, 1, 1, 1);
 }
 
@@ -248,10 +248,9 @@ void ConvLayer<Ntype>::addBias(const cudnnTensorDescriptor_t& top_tensorDesc, in
  * Convolution forward propagation
  */
 template<typename Ntype>
-Ntype ConvLayer<Ntype>::Forward(Phase phase)
+void ConvLayer<Ntype>::Forward(Phase phase)
 {
     this->m_bottom = this->m_prevLayer[0]->getTop();
-    //printf_NDMatrix_data(this->m_bottom);
 
     CUDNN_CHECK(cudnnSetTensor4dDescriptor(bottom_tensorDesc,
                                           cuDNN<float>::getInstance()->GetTensorFormat(),
@@ -345,7 +344,6 @@ Ntype ConvLayer<Ntype>::Forward(Phase phase)
         CUDA_CHECK(cudaFree(convFwdWorkSpace));
     }
 
-    return this->m_loss;
 }
 
 /*
@@ -364,8 +362,8 @@ void ConvLayer<Ntype>::Backward()
                                             this->m_top->gpu_diff(),
                                             &beta,
                                             biasTensorDesc,
-                                            m_bias->mutable_gpu_diff()
-                                           ));
+                                            tmp_Bgrad
+                                            ));
 
     // Obtain the best suited algorithm for cudnnConvolutionBackwardFilter
     if(cuDNN<float>::getInstance()->getConvolutionBwdFilterAlgorithm() < 0)
@@ -415,7 +413,8 @@ void ConvLayer<Ntype>::Backward()
                                               convBwdFilterSizeInBytes,
                                               &beta,
                                               filterDesc,
-                                              m_weight->mutable_gpu_diff()));
+                                              tmp_Wgrad
+                                              ));
 
     if (convBwdFilterSizeInBytes != 0)
     {

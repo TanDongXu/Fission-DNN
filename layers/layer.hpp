@@ -28,7 +28,7 @@ class Layer
     virtual ~Layer(){}
     // Adjust the shapes of top NDMatrix and internal buffers to accommodate the shapes of the bottom
     // Given the bottom NDMatrix, compute the top NDMatrix and the loss
-    virtual Ntype Forward(Phase phase) = 0;
+    virtual void Forward(Phase phase) = 0;
     // given the top NDMatrix error gradients, compute the bottom NDMatrix error gradients
     virtual void Backward() = 0;
     inline void insertPrevLayer(Layer<Ntype>* layer){ CHECK(layer); m_prevLayer.push_back(layer); }

@@ -26,7 +26,7 @@ class HiddenLayer: public Layer<Ntype>
 public:
 	HiddenLayer(string name);
 	~HiddenLayer();
-    Ntype Forward(Phase phase);
+    void Forward(Phase phase);
     void Backward();
 
     private:

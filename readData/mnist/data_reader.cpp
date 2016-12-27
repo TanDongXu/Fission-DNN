@@ -65,11 +65,12 @@ void readMnistData(NDMatrix<float>& dataX, NDMatrix<int>& labelY, string image_f
         {
             for(int c = 0; c < cols; ++c)
             {
-                char temp = 0;
+                unsigned char temp = 0;
                 image_file.read((char*)&temp, sizeof(temp));
-                pData[c + cols * r + cols * rows * item_id] = (float)(temp/255.0f);
+                pData[c + cols * r + cols * rows * item_id] = (float)(2.0f * temp/255.0f - 1.0f);
             }
         }
+
         //read labels
         unsigned char ltmp = 0;
         label_file.read((char*)&ltmp, sizeof(ltmp));

@@ -20,7 +20,7 @@ class DropOutLayer : public Layer<Ntype>
     public:
     DropOutLayer(string name);
     ~DropOutLayer();
-    Ntype Forward(Phase phase);
+    void Forward(Phase phase);
     void Backward();
 
     private:

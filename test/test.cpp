@@ -34,10 +34,13 @@ void printf_NDMatrix_data(NDMatrix<float>*matrix)
             }
             cout<<endl;
         }
-
         cout<< endl;
-        for(;;);
+        cout<<matrix->ND_shape_string()<<endl;
+        //if(n == 1)
+        //for(;;);
     }
+
+    for(;;);
 }
 
 template<>
@@ -58,7 +61,6 @@ void printf_NDMatrix_data(NDMatrix<double>*matrix)
                 {
                     cout<< matrix->data_at(n, c, h, w)<<" ";
                 }
-
                 cout<<endl;
             }
         }
@@ -75,6 +77,7 @@ void printf_NDMatrix_data(NDMatrix<int>*matrix)
     const int channels = matrix->ND_channels();
     const int height = matrix->ND_height();
     const int width = matrix->ND_width();
+    
     for(int n = 0; n < num; n++)
     {
         for(int c = 0; c < channels; c++)
@@ -83,7 +86,7 @@ void printf_NDMatrix_data(NDMatrix<int>*matrix)
             {
                 for(int  w = 0; w < width; w++)
                 {
-                    cout<< matrix->data_at(n, c, h, w)<<" ";
+                    cout<<n << " = "<<matrix->data_at(n, c, h, w)<<" ";
                 }
             }
         }
@@ -112,6 +115,101 @@ void printf_devData(int number, int channels, int height, int width, float*A)
             }
             cout<<endl;
         }       
+    }
+
+    cout<<number<<" "<<channels<<" "<<height<<" "<<width<<endl;
+    for(;;);
+}
+
+template<>
+void printf_NDMatrix_diff(NDMatrix<float>*matrix)
+{
+    const int num = matrix->ND_num();
+    const int channels = matrix->ND_channels();
+    const int height = matrix->ND_height();
+    const int width = matrix->ND_width();
+
+    for(int n = 0; n < num; n++)
+    {
+        for(int c = 0; c < channels; c++)
+        {
+            for(int h = 0; h < height; h++)
+            {
+                for(int  w = 0; w < width; w++)
+                {
+                    cout<< matrix->diff_at(n, c, h, w)<<" ";
+                }
+
+                cout<<endl;
+            }
+            cout<<endl;
+        }
+        cout<< endl;
+        cout<<matrix->ND_shape_string()<<endl;
+        //if(n == 1)
+        //for(;;);
+    }
+
+    for(;;);
+}
+template<>
+void printf_NDMatrix_diff(NDMatrix<double>*matrix)
+{
+    const int num = matrix->ND_num();
+    const int channels = matrix->ND_channels();
+    const int height = matrix->ND_height();
+    const int width = matrix->ND_width();
+
+    for(int n = 0; n < num; n++)
+    {
+        for(int c = 0; c < channels; c++)
+        {
+            for(int h = 0; h < height; h++)
+            {
+                for(int  w = 0; w < width; w++)
+                {
+                    cout<< matrix->diff_at(n, c, h, w)<<" ";
+                }
+
+                cout<<endl;
+            }
+            cout<<endl;
+        }
+        cout<< endl;
+        cout<<matrix->ND_shape_string()<<endl;
+        //if(n == 1)
+        //for(;;);
+    }
+
+    for(;;);
+}
+template<>
+void printf_NDMatrix_diff(NDMatrix<int>*matrix)
+{
+    const int num = matrix->ND_num();
+    const int channels = matrix->ND_channels();
+    const int height = matrix->ND_height();
+    const int width = matrix->ND_width();
+
+    for(int n = 0; n < num; n++)
+    {
+        for(int c = 0; c < channels; c++)
+        {
+            for(int h = 0; h < height; h++)
+            {
+                for(int  w = 0; w < width; w++)
+                {
+                    cout<< matrix->diff_at(n, c, h, w)<<" ";
+                }
+
+                cout<<endl;
+            }
+            cout<<endl;
+        }
+        cout<< endl;
+        cout<<matrix->ND_shape_string()<<endl;
+        //if(n == 1)
+        //for(;;);
     }
 
     for(;;);

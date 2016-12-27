@@ -20,7 +20,7 @@ class ConvLayer : public Layer<Ntype>
     public:
     ConvLayer(string name);
     ~ConvLayer();
-    Ntype Forward(Phase phase);
+    void Forward(Phase phase);
     void Backward();
 
     private:

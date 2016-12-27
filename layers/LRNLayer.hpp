@@ -23,7 +23,7 @@ class LRNLayer : public Layer<Ntype>
     public:
     LRNLayer(string name);
     ~LRNLayer();
-    Ntype Forward(Phase phase);
+    void Forward(Phase phase);
     void Backward();
 
     private:

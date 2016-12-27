@@ -1,5 +1,6 @@
 #include"dropOutLayer.hpp"
 #include"common/syncedmem.hpp"
+#include"test/test.hpp"
 
 template<typename Ntype>
 void DropOutLayer<Ntype>::ReShape()
@@ -111,6 +112,7 @@ __global__ void dropout_test(float* data, int size, float probability)
 template<typename Ntype>
 void DropOutLayer<Ntype>::CreateUniform(int size)
 {
+    srand((unsigned)time(NULL));
     curandSetPseudoRandomGeneratorSeed(curandGenerator_DropOut, time(NULL));
     curandGenerateUniform(curandGenerator_DropOut, outputPtr, size);
 }
@@ -134,7 +136,7 @@ void DropOutLayer<Ntype>::Dropout_TestSet(float* data, int size, float dropout_r
 }
 
 template<typename Ntype>
-Ntype DropOutLayer<Ntype>::Forward(Phase phase)
+void DropOutLayer<Ntype>::Forward(Phase phase)
 {
     this->m_bottom = this->m_prevLayer[0]->getTop();
 
@@ -145,17 +147,17 @@ Ntype DropOutLayer<Ntype>::Forward(Phase phase)
         Dropout_TrainSet((float*)this->m_top->mutable_gpu_data(), this->m_number * this->m_channels * this->m_height * this->m_width, DropOut_rate);
     }
     else
-    Dropout_TestSet((float*)this->m_top->mutable_gpu_data(), this->m_number * this->m_channels * this->m_height * this->m_width, DropOut_rate);
+        Dropout_TestSet((float*)this->m_top->mutable_gpu_data(), this->m_number * this->m_channels * this->m_height * this->m_width, DropOut_rate);
     
-    return this->m_loss;
 }
 
 template<typename Ntype>
 void DropOutLayer<Ntype>::Backward()
 {
 //    int nIndex = m_nCurBranchIndex;
+    float* diffData = (float*)this->m_top->mutable_gpu_diff();
 //    diffData = nextLayer[nIndex]->diffData;
-    Dropout_TrainSet((float*)this->m_bottom->mutable_gpu_diff(), this->m_number * this->m_channels * this->m_height * this->m_width, DropOut_rate);
+    Dropout_TrainSet(diffData, this->m_number * this->m_channels * this->m_height * this->m_width, DropOut_rate);
 }
 
 template<typename Ntype>

@@ -135,7 +135,7 @@ __global__ void LreluForward(const float* srcData, float* dstData, int data_size
  * Activation forward propagation
  */
 template<typename Ntype>
-Ntype ActivationLayer<Ntype>::Forward(Phase Phase)
+void ActivationLayer<Ntype>::Forward(Phase Phase)
 {
     this->m_bottom = this->m_prevLayer[0]->getTop();
 

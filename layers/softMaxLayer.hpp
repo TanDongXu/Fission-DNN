@@ -26,7 +26,7 @@ class SoftMaxLayer : public Layer<Ntype>
     SoftMaxLayer(string name);
     //SoftMaxLayer(const SoftMaxLayer* layer);
     ~SoftMaxLayer();
-    Ntype Forward(Phase phase);
+    void Forward(Phase phase);
     void Backward();
 
     private:

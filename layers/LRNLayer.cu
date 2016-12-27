@@ -123,7 +123,7 @@ LRNLayer<Ntype>::~LRNLayer()
  * LRN Forward propagation
  */
 template<typename Ntype>
-Ntype LRNLayer<Ntype>::Forward(Phase phase)
+void LRNLayer<Ntype>::Forward(Phase phase)
 {
     this->m_bottom = this->m_prevLayer[0]->getTop();
 

@@ -140,7 +140,7 @@ PoolLayer<Ntype>::PoolLayer(string name)
  * Pool layer Forward propagation
  */
 template<typename Ntype>
-Ntype PoolLayer<Ntype>::Forward(Phase Phase)
+void PoolLayer<Ntype>::Forward(Phase Phase)
 {
     this->m_bottom = this->m_prevLayer[0]->getTop();
 

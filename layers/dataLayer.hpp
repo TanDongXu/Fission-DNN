@@ -27,7 +27,7 @@ class DataLayer:public Layer<Ntype>
     void random_load_batch(NDMatrix<Ntype>& image_data, NDMatrix<int>& image_labels);
     inline int getDataSize() const { return m_dataSize; }
     inline NDMatrix<int>* getLabels() const { return m_labels; }
-    Ntype Forward(Phase phase);
+    void Forward(Phase phase);
     void Backward();
 
     private:

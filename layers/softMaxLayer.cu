@@ -190,7 +190,7 @@ void SoftMaxLayer<Ntype>::ClassificationResults()
  * Softmax layer forward propagation
  */
 template<typename Ntype>
-Ntype SoftMaxLayer<Ntype>::Forward(Phase phase)
+void SoftMaxLayer<Ntype>::Forward(Phase phase)
 {
     getBatch_labels();
     this->m_bottom = this->m_prevLayer[0]->getTop();
@@ -223,11 +223,8 @@ Ntype SoftMaxLayer<Ntype>::Forward(Phase phase)
                                    top_tensorDesc,
                                    this->m_top->mutable_gpu_data()));
 
-    //cout<<this->m_top->ND_shape_string()<<endl;
-    //printf_NDMatrix_data(this->m_top);
     // If test, compute result
     if(TEST == phase ) ClassificationResults();
-    return this->m_loss;
 }
 
 /*
@@ -249,6 +246,7 @@ __global__ void SoftmaxLossBackprop(const int* label, int num_labels, int batch_
 template<typename Ntype>
 void SoftMaxLayer<Ntype>::getBackPropDiffData()
 {
+    mem_gpu2gpu(this->m_top->mutable_gpu_diff(), this->m_top->mutable_gpu_data(), this->m_number * this->m_channels * this->m_height * this->m_width * sizeof(float));
     SoftmaxLossBackprop<<< (m_batchSize + 127)/128, 128>>>(m_srcLabels->gpu_data(), m_nClasses, m_batchSize, (float*)this->m_top->mutable_gpu_diff());
     cudaThreadSynchronize();
 }

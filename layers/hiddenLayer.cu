@@ -64,7 +64,7 @@ template<typename Ntype>
 void HiddenLayer<Ntype>::ReShape()
 {
     this->m_top = new NDMatrix<Ntype>(m_batchSize, m_outputSize, 1, 1);
-    m_weight = new NDMatrix<Ntype>(m_outputSize, m_inputSize, 1, 1);
+    m_weight = new NDMatrix<Ntype>(1, 1, m_outputSize, m_inputSize);
     m_bias = new NDMatrix<Ntype>(m_outputSize, 1, 1, 1);
 }
 
@@ -210,7 +210,7 @@ HiddenLayer<Ntype>::~HiddenLayer()
  * Hidden layer forward propagation
  */
 template<typename Ntype>
-Ntype HiddenLayer<Ntype>::Forward(Phase phase)
+void HiddenLayer<Ntype>::Forward(Phase phase)
 {
     this->m_bottom = this->m_prevLayer[0]->getTop();
 
@@ -253,8 +253,6 @@ Ntype HiddenLayer<Ntype>::Forward(Phase phase)
                                   dim_y));
 
     this->m_height = 1; this->m_width = 1; this->m_channels = dim_y;
-
-    return this->m_loss;
 }
 
 /*
@@ -363,7 +361,6 @@ void HiddenLayer<Ntype>::Backward()
                                   1,
                                   (float*)m_weight->mutable_gpu_data(),
                                   1));
-
     size = m_outputSize;
     CUBLAS_CHECK(cublasSaxpy(cuDNN<float>::getInstance()->GetcublasHandle(),
                                   size,

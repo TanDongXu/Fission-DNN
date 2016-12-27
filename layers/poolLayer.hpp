@@ -25,7 +25,7 @@ class PoolLayer : public Layer<Ntype>
     public:
     PoolLayer(string name);
     ~PoolLayer();
-    Ntype Forward(Phase phase);
+    void Forward(Phase phase);
     void Backward();
 
     private:

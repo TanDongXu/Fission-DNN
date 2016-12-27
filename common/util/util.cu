@@ -148,6 +148,7 @@ void createGaussian(NDMatrix<Ntype>* gaussian, float epsilon)
 
     int iiMidr = rows >> 1;
     int iiMidc = cols >> 1;
+    Ntype* pGauss = gaussian->mutable_cpu_data();
 
     srand((unsigned) time(NULL));
     float _sum = 0.0;
@@ -164,8 +165,8 @@ void createGaussian(NDMatrix<Ntype>* gaussian, float epsilon)
                     float val1 = 1.0f / (dElasticSigma1 * dElasticSigma2 * 2.0f * 3.1415926535897932384626433832795f);
                     float val2 = 1.0f * (row-iiMidr)*(row-iiMidr) / (dElasticSigma1 * dElasticSigma1) + 1.0f * (col-iiMidc)*(col-iiMidc) / (dElasticSigma2 * dElasticSigma2) 
                         + 2.0f * (row - iiMidr) * (col - iiMidc) / (dElasticSigma1 * dElasticSigma2);
-                    gaussian->mutable_cpu_data()[gaussian->ND_offset(num, ch, row, col)] = val1 * exp(-1.0f * val2);
-                    _sum += gaussian->cpu_data()[gaussian->ND_offset(num, ch, row, col)];
+                    pGauss[gaussian->ND_offset(num, ch, row, col)] = val1 * exp(-1.0f * val2);
+                    _sum += pGauss[gaussian->ND_offset(num, ch, row, col)];
                 }
             }
         }
@@ -179,8 +180,8 @@ void createGaussian(NDMatrix<Ntype>* gaussian, float epsilon)
             {
                 for(int col = 0; col < cols; col++)
                 {
-                    float val = gaussian->cpu_data()[gaussian->ND_offset(num, ch, row, col)] / _sum;
-                    gaussian->mutable_cpu_data()[gaussian->ND_offset(num, ch, row, col)] = val * epsilon;
+                    float val = pGauss[gaussian->ND_offset(num, ch, row, col)] / _sum;
+                    pGauss[gaussian->ND_offset(num, ch, row, col)] = val * epsilon;
                 }       
             }   
         }

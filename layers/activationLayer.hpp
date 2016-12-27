@@ -20,7 +20,7 @@ class ActivationLayer : public Layer<Ntype>
     public:
     ActivationLayer(string name);
     ~ActivationLayer();
-    Ntype Forward(Phase Phase);
+    void Forward(Phase Phase);
     void Backward();
 
     private:

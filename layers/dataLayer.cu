@@ -76,9 +76,8 @@ DataLayer<Ntype>::DataLayer(string name, const int rows, const int cols)
  * Data Layer Forward propagation
  */
 template<typename Ntype>
-Ntype DataLayer<Ntype>::Forward(Phase phase)
+void DataLayer<Ntype>::Forward(Phase phase)
 {
-    return this->m_loss;
     //nothing
 }
 
@@ -88,8 +87,13 @@ Ntype DataLayer<Ntype>::Forward(Phase phase)
 template<typename Ntype>
 void DataLayer<Ntype>::load_batch(int index, NDMatrix<Ntype>& image_data, NDMatrix<int>& image_label)
 {
-    if(0 == index) m_dataSize = image_data.ND_num();
+    m_dataSize = image_data.ND_num();
     int start = index * m_batchSize;
+
+    Ntype* pBottom = this->m_bottom->mutable_cpu_data();
+    const Ntype* pImg = image_data.cpu_data();
+    int* pBottom_label = m_labels->mutable_cpu_data();
+    const int* pImg_label = image_label.cpu_data();
 
     int k = 0;
     for (int i = start; i < ((start + m_batchSize) > m_dataSize ? m_dataSize : (start + m_batchSize)); i++) {
@@ -97,15 +101,13 @@ void DataLayer<Ntype>::load_batch(int index, NDMatrix<Ntype>& image_data, NDMatr
             for (int h = 0; h < this->m_height; h++) {
                 for (int w = 0; w < this->m_width; w++) {
                     int offset = image_data.ND_offset(i, c, h, w);
-                    this->m_bottom->mutable_cpu_data()[this->m_bottom->ND_offset(k, c, h, w)] = image_data.cpu_data()[offset];
+                    pBottom[this->m_bottom->ND_offset(k, c, h, w)] = pImg[offset];
                 }
             }
         }
-
-        m_labels->mutable_cpu_data()[k] = image_label.cpu_data()[i];
+        pBottom_label[k] = pImg_label[i];
         k++;
     }
-
     //preprocessing
     if(m_isDataTransFormer)
         m_data_transformer->Transform(this->m_bottom, this->m_top, TEST);
@@ -119,6 +121,12 @@ void DataLayer<Ntype>::random_load_batch(NDMatrix<Ntype>& image_data, NDMatrix<i
 {
     srand((unsigned)time(NULL));
     m_dataSize = image_data.ND_num();
+    
+     Ntype* pBottom = this->m_bottom->mutable_cpu_data();
+    const Ntype* pImg = image_data.cpu_data();
+    int* pBottom_label = m_labels->mutable_cpu_data();
+    const int* pImg_label = image_label.cpu_data();
+
     int randomNum = ((long)rand() + (long)rand()) % (m_dataSize - m_batchSize);
 
     for(int i = 0; i< m_batchSize; i++)
@@ -130,11 +138,11 @@ void DataLayer<Ntype>::random_load_batch(NDMatrix<Ntype>& image_data, NDMatrix<i
                 for(int w = 0; w < this->m_width; w++)
                 {
                     int offset = image_data.ND_offset(i + randomNum, c, h, w);
-                    this->m_bottom->mutable_cpu_data()[this->m_bottom->ND_offset(i, c, h, w)] = image_data.cpu_data()[offset];
+                    pBottom[this->m_bottom->ND_offset(i, c, h, w)] = pImg[offset];
                 }
             }
         }
-        m_labels->mutable_cpu_data()[i] = image_label.cpu_data()[i + randomNum];
+        pBottom_label[i] = pImg_label[i + randomNum];
     }
     //preprocessing
     if(m_isDataTransFormer)
