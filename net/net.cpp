@@ -157,7 +157,7 @@ void getNetWorkCost()
     }
 }
 
-//std::vector<configBase*> g_vQue;
+std::vector<BaseLayerConfig*> g_vQue;
 ////std::map<LayersBase*, size_t> g_vFissNode;
 //std::vector<SoftMaxLayer*> g_vBranchResult;
 ////int g_nMinCorrSize;
@@ -201,41 +201,41 @@ void getNetWorkCost()
 //    g_vQue.pop_back();
 //}
 //
-//void dfsTraining(configBase* config, float nMomentum, cuMatrixVector<float>& trainData, cuMatrix<int>* &trainLabel, int& iter)
-//{
-//    g_vQue.push_back(config);
-//
-//    /*如果是一个叶子节点*/
-//    if (config->_next.size() == 0){
-//        DataLayer* datalayer = static_cast<DataLayer*>(Layers::instanceObject()->getLayer("data"));
-//        datalayer->RandomBatch_Images_Label(trainData, trainLabel);
-//
-//        for(int i = 0; i < g_vQue.size(); i++){
-//            //printf("f %d %s\n", i, g_vQue[i]->_name.c_str());
-//            LayersBase* layer = (LayersBase*)Layers::instanceObject()->getLayer(g_vQue[i]->_name);
-//            layer->forwardPropagation( "train" );
-//        }
-//
-//        for( int i = g_vQue.size() - 1; i>= 0; i--){
-//            LayersBase* layer = (LayersBase*)Layers::instanceObject()->getLayer(g_vQue[i]->_name);
-//            // if(layer->getRateReduce() > 1e-4){
-//            layer->backwardPropagation( nMomentum );
-//            //  }
-//            // else{
-//            //      break;
-//            //   }
-//        }
-//    }
-//    /*如果不是叶子节点*/
-//    for(int i = 0; i < config->_next.size(); i++){
-//        configBase* tmpConfig = config->_next[i];
-//        LayersBase* layer = (LayersBase*)Layers::instanceObject()->getLayer( config->_name );
-//        layer->setCurBranchIndex(i);
-//        dfsTraining( tmpConfig, nMomentum, trainData, trainLabel, iter);
-//    }
-//    g_vQue.pop_back();
-//}
-//
+void dfsTraining(BaseLayerConfig* config, float nMomentum, NDMatrix<float>& trainData, NDMatrix<int>& trainLabel, int& iter)
+{
+    g_vQue.push_back(config);
+
+    /*如果是一个叶子节点*/
+    if (config->getVecNext().size() == 0){
+        DataLayer<float>* datalayer = static_cast<DataLayer<float>*>(LayerContainer<float>::getInstance()->getLayerByName("data"));
+        datalayer->random_load_batch(trainData, trainLabel);
+
+        for(int i = 0; i < g_vQue.size(); i++){
+            //printf("f %d %s\n", i, g_vQue[i]->_name.c_str());
+            Layer<float>* layer = (Layer<float>*)LayerContainer<float>::getInstance()->getLayerByName(g_vQue[i]->getName());
+            layer->Forward(TRAIN);
+        }
+
+        for( int i = g_vQue.size() - 1; i >= 0; i--){
+            Layer<float>* layer = (Layer<float>*)LayerContainer<float>::getInstance()->getLayerByName(g_vQue[i]->getName());
+            // if(layer->getRateReduce() > 1e-4){
+            layer->Backward();
+            //  }
+            // else{
+            //      break;
+            //   }
+        }
+    }
+    /*如果不是叶子节点*/
+    for(int i = 0; i < config->getVecNext().size(); i++){
+        BaseLayerConfig* tmpConfig = config->getVecNext()[i];
+        Layer<float>* layer = (Layer<float>*)LayerContainer<float>::getInstance()->getLayerByName( config->getName() );
+        //layer->setCurBranchIndex(i);
+        dfsTraining( tmpConfig, nMomentum, trainData, trainLabel, iter);
+    }
+    g_vQue.pop_back();
+}
+
 ///*
 // *ascend order
 // */
@@ -351,24 +351,23 @@ void trainNetWork(NDMatrix<float>& trainSetX, NDMatrix<int>& trainSetY,
     {
         clock_t inStart, inEnd;
         inStart = clock();
-        //if( false == DFS_TRAINING ){
-            /*train network*/
+        if( false == DFS_TRAINING ){
+            // Train network
             for(int iter = 0 ; iter < iter_per_epo; iter++)
             {
                 data_layer->random_load_batch(trainSetX, trainSetY);
                 getNetWorkCost();
             }
-     //   }
-     //   else{
-     //       //printf("error\n");
-     //       int iter = 0;
-     //       g_vQue.clear();
-     //       while(iter < iter_per_epo){
-     //           dfsTraining(config, Momentum, trainData, trainLabel, iter);
-     //           iter++;
-     //       }
-     //   }
-//
+        }
+        else{
+            int iter = 0;
+            g_vQue.clear();
+            while(iter < iter_per_epo){
+                dfsTraining(layer_config, momentum, trainSetX, trainSetY, iter);
+                iter++;
+            }
+        }
+
         inEnd = clock();
 //
 //        config = (configBase*) config::instanceObjtce()->getFirstLayers();
@@ -393,61 +392,48 @@ void trainNetWork(NDMatrix<float>& trainSetX, NDMatrix<int>& trainSetY,
 //        }
 //        */
 //
-//        //**只调整三次学习率, 可修改
-//        if( epo == 150 || epo == 450 || epo == 750 ){
-//            config = (configBase*) config::instanceObjtce()->getFirstLayers();
-//            //adjust learning rate
-//            queue<configBase*> que;
-//            set<configBase*> hash;
-//            hash.insert(config);
-//            que.push(config);
-//            while( !que.empty() ){
-//                config = que.front();
-//                que.pop();
-//                LayersBase * layer = (LayersBase*)Layers::instanceObject()->getLayer(config->_name);
-//                //layer->rateReduce();
-//                //**可修改
-//                if(epo == 150)
-//                    layer->lrate /= 10.0f;
-//                else if(epo == 450)
-//                    layer->lrate /= 5.0f;
-//                else layer->lrate /= 2.0f;
-//                
-//                /*
-//                if( layer->lrate >= 1e-4 && layer->lrate <= 1){
-//                    printf("lRate %s %f\n", layer->_name.c_str(), layer->lrate);
-//                }
-//                */
-//
-//                for(int i = 0; i < config->_next.size(); i++){
-//                    if( hash.find(config->_next[i]) == hash.end()){
-//                        hash.insert(config->_next[i]);
-//                        que.push(config->_next[i]);
-//                    }
-//                }
-//            }
-//        }
-//
-//        if(epo && epo % epoCount[id] == 0)
-//        {
-//            id++;
-//            if(id>9) id=9;
-//        }
-//
-        /*test network*/
+        //**只调整三次学习率, 可修改
+        if( epo == 150 || epo == 450 || epo == 750 ){
+            BaseLayerConfig* config = (BaseLayerConfig*) ConfigTable::getInstance()->getFirstLayer();
+            //adjust learning rate
+            queue<BaseLayerConfig*> que;
+            set<BaseLayerConfig*> hash;
+            hash.insert(config);
+            que.push(config);
+            while( !que.empty() ){
+                config = que.front();
+                que.pop();
+                Layer<float> * layer = (Layer<float>*)LayerContainer<float>::getInstance()->getLayerByName(config->getName());
+                //layer->rateReduce();
+                //**可修改
+                if(epo == 150)
+                    layer->setLrate(layer->getLrate()/10.0f);
+                else if(epo == 450)
+                    layer->setLrate(layer->getLrate()/5.0f);
+                else layer->setLrate(layer->getLrate() / 2.0f);
+                for(int i = 0; i < config->getVecNext().size(); i++){
+                    if( hash.find(config->getVecNext()[i]) == hash.end()){
+                        hash.insert(config->getVecNext()[i]);
+                        que.push(config->getVecNext()[i]);
+                    }
+                }
+            }
+        }
+        // Test network
         cout << "epochs: " << epo << " ,Time: " << (inEnd - inStart)/CLOCKS_PER_SEC<<"s,";
-        //if( DFS_TEST == false){
+        if( DFS_TEST == false)
+        {
             predictTestData( testSetX, testSetY);
-        //}
-        //else{
-        //    //VoteLayer::instance()->clear();
-        //    static float fMax = 0;
-        //    BaseLayerConfig* config = (BaseLayerConfig*) ConfigTable::getInstance()->getFirstLayer();
-        //    dfsResultPredict(config, testData, testLabel, batchSize);
-        //    float fTest = VoteLayer::instance()->result();
-        //    if ( fMax < fTest ) fMax = fTest;
-        //    printf(" test_result %f/%f ", fTest, fMax);
-        //}
+        }
+        else{
+           //VoteLayer::instance()->clear();
+           //static float fMax = 0;
+           //BaseLayerConfig* config = (BaseLayerConfig*) ConfigTable::getInstance()->getFirstLayer();
+           //dfsResultPredict(config, testData, testLabel, batchSize);
+           //float fTest = VoteLayer::instance()->result();
+           //if ( fMax < fTest ) fMax = fTest;
+           //printf(" test_result %f/%f ", fTest, fMax);
+        }
         cout << " ,Momentum: " << momentum << endl;
 //
 //        /*在进入下一次训练之前进行裂变*/
@@ -464,8 +450,8 @@ void trainNetWork(NDMatrix<float>& trainSetX, NDMatrix<int>& trainSetY,
 //            }
 //        }
     }
-//
-//    stop = clock();
-//    runtime = stop - start;
-//    cout<< epochs <<" epochs total rumtime is: "<<runtime /CLOCKS_PER_SEC<<" Seconds"<<endl;
+
+    stop = clock();
+    runtime = stop - start;
+    cout<< epochs <<" epochs total rumtime is: "<<runtime /CLOCKS_PER_SEC<<" Seconds"<<endl;
 }

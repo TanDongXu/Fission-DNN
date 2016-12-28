@@ -91,8 +91,10 @@ file(GLOB Fission-DNN_CU_SOURCES  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "layers/*"
     "common/util/*"
     "examples/mnist/*"
+    "examples/cifar10/*"
     "build/datum.pb.*"
     "readData/mnist/*"
+    "readData/cifar10/*"
     "dataTransFormer/*"
     "net/net.*"
     )

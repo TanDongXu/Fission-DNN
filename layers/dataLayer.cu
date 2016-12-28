@@ -31,6 +31,9 @@ void DataLayer<Ntype>::ReShape()
     m_labels = new NDMatrix<int>(this->m_number, 1, 1, 1);
     // labels diff no used
     m_labels->diff().reset();
+
+    //pBottom_mutable_cpu_data = this->m_bottom->mutable_cpu_data();
+    //int* pBottom_label = m_labels->mutable_cpu_data();
 }
 
 /*
@@ -109,8 +112,8 @@ void DataLayer<Ntype>::load_batch(int index, NDMatrix<Ntype>& image_data, NDMatr
         k++;
     }
     //preprocessing
-    if(m_isDataTransFormer)
-        m_data_transformer->Transform(this->m_bottom, this->m_top, TEST);
+    //if(m_isDataTransFormer)
+    //    m_data_transformer->Transform(this->m_bottom, this->m_top, TEST);
 }
 
 /*

@@ -38,6 +38,8 @@ class Layer
     inline void setInputName(string name){ m_inputName = name; }
     inline string getName() const { return m_name; }
     inline NDMatrix<Ntype>* getTop() const { return m_top; }
+    inline float getLrate()const{ return m_lrate; }
+    inline void setLrate(float rate){ m_lrate = rate; }
 
     protected: 
     virtual void ReShape() = 0;

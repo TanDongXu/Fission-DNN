@@ -2,9 +2,19 @@
 #include<cmath>
 #include<cstdlib>
 #include<ctime>
+#include<sstream>
 #include"util.cuh"
 #include"common/common.hpp"
 #include"common/nDMatrix.hpp"
+
+string int_to_string(int num)
+{
+    stringstream ss;
+    ss << num;
+    string s;
+    s = ss.str();
+    return s;
+}
 
 // ShowDevices information
 void showDevices()

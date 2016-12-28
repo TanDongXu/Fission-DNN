@@ -27,6 +27,7 @@
 #define RAMDOM 1;
 #define READ_FROM_FILE 2
 
+string int_to_string(int num);
 void showDevices();
 template<typename Ntype>
 void createGaussian(NDMatrix<Ntype>* gaussian, float epsilon);
