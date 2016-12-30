@@ -41,8 +41,6 @@ class DataLayer:public Layer<Ntype>
     bool m_doMirror;
     int m_cropSize;
     float m_scale;
-    Ntype* pBottom_mutable_cpu_data;
-    int* pBottom_mutable_cpu_labels;
 };
 
 #endif
