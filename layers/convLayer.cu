@@ -45,7 +45,7 @@ void ConvLayer<Ntype>:: destroyHandles()
 template<typename Ntype>
 void ConvLayer<Ntype>::initRandom(bool isGaussian)
 {
-    srand((unsigned)time(NULL));
+    //srand((unsigned)time(NULL));
     if(isGaussian)
     {
         createGaussian<Ntype>(m_weight, m_epsilon);

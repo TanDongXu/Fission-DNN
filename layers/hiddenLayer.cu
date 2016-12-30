@@ -40,7 +40,7 @@ void HiddenLayer<Ntype>::initRandom(bool isGaussian)
         createGaussian<Ntype>(m_weight, m_epsilon);
     }else
     {
-        srand((unsigned)time(NULL));
+        //srand((unsigned)time(NULL));
    	    /*initial weight*/
    	    curandSetPseudoRandomGeneratorSeed(curandGenerator_W, time(NULL));
         curandGenerateNormal(curandGenerator_W, (float*)m_weight->mutable_gpu_data(), m_outputSize * m_inputSize, 0, m_epsilon);

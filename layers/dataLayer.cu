@@ -122,10 +122,9 @@ void DataLayer<Ntype>::load_batch(int index, NDMatrix<Ntype>& image_data, NDMatr
 template<typename Ntype>
 void DataLayer<Ntype>::random_load_batch(NDMatrix<Ntype>& image_data, NDMatrix<int>& image_label)
 {
-    srand((unsigned)time(NULL));
     m_dataSize = image_data.ND_num();
     
-     Ntype* pBottom = this->m_bottom->mutable_cpu_data();
+    Ntype* pBottom = this->m_bottom->mutable_cpu_data();
     const Ntype* pImg = image_data.cpu_data();
     int* pBottom_label = m_labels->mutable_cpu_data();
     const int* pImg_label = image_label.cpu_data();

@@ -160,7 +160,6 @@ void createGaussian(NDMatrix<Ntype>* gaussian, float epsilon)
     int iiMidc = cols >> 1;
     Ntype* pGauss = gaussian->mutable_cpu_data();
 
-    srand((unsigned) time(NULL));
     float _sum = 0.0;
     for(int num = 0; num < number; num++)
     {
