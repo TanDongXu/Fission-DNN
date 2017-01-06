@@ -3,8 +3,9 @@
 >Results
 >--------
 >CNN accelerated by cuda and lib <a href ="https://developer.nvidia.com/cudnn">CUDNN v5</a>
->1. Test on <a href="http://yann.lecun.com/exdb/mnist/"> mnist</a>    
->2. Test on cifar-10
+
+> 1. Test on <a href="http://yann.lecun.com/exdb/mnist/"> mnist</a>    
+> 2. Test on cifar-10
 
 >Feature
 >--------
@@ -13,10 +14,10 @@
 
 >Compile
 >-------
->1.Depend on opencv, google protobuf, google glog, LMDB, cudnn and cuda    
->2.You can compile the code on windows or linux.   
->3.Some library install:
->  sudo  apt-get install libprotobuf-dev libopencv-dev protobuf-compiler libatlas-base-dev libgoogle-glog-dev liblmdb-dev
+>1. Depend on opencv, google protobuf, google glog, LMDB, cudnn and cuda    
+>2. You can compile the code on windows or linux.   
+>3. Some library install
+>sudo  apt-get install libprotobuf-dev libopencv-dev protobuf-compiler libatlas-base-dev libgoogle-glog-dev liblmdb-dev
 
 ###GPU compute 
 >* capability 2.0   
