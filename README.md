@@ -16,7 +16,8 @@
 >-------
 >1. Depend on opencv, google protobuf, google glog, LMDB, cudnn and cuda    
 >2. You can compile the code on windows or linux.   
->3. Some library install
+>3. Some library install:
+
 >sudo  apt-get install libprotobuf-dev libopencv-dev protobuf-compiler libatlas-base-dev libgoogle-glog-dev liblmdb-dev
 
 ###GPU compute 
